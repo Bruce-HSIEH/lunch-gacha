@@ -32,7 +32,28 @@ svg.ic{display:inline-block;vertical-align:middle;flex:none}
 
 /* header */
 header{display:flex;align-items:center;gap:12px;margin:4px 0 14px}
-.mascot{width:66px;height:66px;flex:none;animation:bob 2.4s ease-in-out infinite}
+
+.mascotBtn{position:relative;border:0;background:none;padding:0;flex:none;cursor:pointer;touch-action:manipulation}
+.mascot{width:66px;height:66px;display:block;animation:bob 2.4s ease-in-out infinite;overflow:visible}
+.mascot #mBody{transform-origin:50% 92%;transform-box:view-box}
+.mascot.poke #mBody{animation:squish .45s cubic-bezier(.3,1.8,.5,1)}
+@keyframes squish{0%{transform:scale(1.18,.78)}40%{transform:scale(.9,1.12)}70%{transform:scale(1.04,.97)}100%{transform:none}}
+.mascot.angry{animation:rage .12s linear infinite}
+@keyframes rage{25%{transform:translateX(-2px) rotate(-3deg)}75%{transform:translateX(2px) rotate(3deg)}}
+.mascot.full #mBody{animation:pat 1.2s ease-in-out infinite}
+@keyframes pat{50%{transform:scale(1.06,.96)}}
+.mascot.hungry #mBody{animation:wob 1.6s ease-in-out infinite}
+@keyframes wob{25%{transform:rotate(-4deg)}75%{transform:rotate(4deg)}}
+.mascot.love #mBody{animation:pat .7s ease-in-out infinite}
+.mBubble{position:absolute;left:58px;top:-6px;z-index:8;background:#fff;border:2.5px solid var(--ink);border-radius:14px;padding:3px 10px;font-size:13px;font-weight:900;white-space:nowrap;
+  opacity:0;transform:scale(.4) translateY(6px);transform-origin:left bottom;transition:opacity .15s,transform .25s cubic-bezier(.2,1.6,.4,1);pointer-events:none;box-shadow:0 3px 0 rgba(90,68,52,.18)}
+.mBubble::before{content:"";position:absolute;left:-7px;bottom:6px;border:6px solid transparent;border-right-color:var(--ink)}
+.mBubble.show{opacity:1;transform:none}
+.mBubble.angry{background:#FFD6D6}
+.mBubble.hungry{background:#FFF1B8}
+.mBubble.full{background:#D9F2E3}
+.mBubble.love{background:#FFE3EC}
+
 @keyframes bob{50%{transform:translateY(-4px) rotate(-3deg)}}
 .snd{margin-left:auto;display:flex;gap:6px;align-self:flex-start;margin-top:4px}
 .snd button{width:40px;height:40px;border-radius:14px;border:2.5px solid var(--line);background:#fff;display:grid;place-items:center;padding:0;transition:.15s}
@@ -209,14 +230,17 @@ footer{text-align:center;font-size:11.5px;color:var(--ink2);line-height:1.6;marg
 <div class="wrap">
 
 <header>
-  <svg class="mascot" viewBox="0 0 100 100" aria-hidden="true">
-    <path d="M50 8 C70 8 92 52 92 70 C92 86 78 92 50 92 C22 92 8 86 8 70 C8 52 30 8 50 8Z" fill="#fff" stroke="#5A4434" stroke-width="4"/>
-    <path d="M24 66 H76 V86 Q50 92 24 86Z" fill="#4E5E4A" stroke="#5A4434" stroke-width="4" stroke-linejoin="round"/>
-    <circle cx="37" cy="52" r="4.5" fill="#5A4434"/><circle cx="63" cy="52" r="4.5" fill="#5A4434"/>
-    <circle cx="38.5" cy="50.5" r="1.4" fill="#fff"/><circle cx="64.5" cy="50.5" r="1.4" fill="#fff"/>
-    <ellipse cx="28" cy="60" rx="6" ry="3.5" fill="#FF9C86" opacity=".8"/><ellipse cx="72" cy="60" rx="6" ry="3.5" fill="#FF9C86" opacity=".8"/>
-    <path d="M44 57 Q50 63 56 57" stroke="#5A4434" stroke-width="3" fill="none" stroke-linecap="round"/>
-  </svg>
+  <button class="mascotBtn" id="mascotBtn" aria-label="戳飯糰">
+    <svg class="mascot" id="mascot" viewBox="0 0 100 100" overflow="visible">
+      <g id="mBody">
+        <path d="M50 8 C70 8 92 52 92 70 C92 86 78 92 50 92 C22 92 8 86 8 70 C8 52 30 8 50 8Z" fill="#fff" stroke="#5A4434" stroke-width="4"/>
+        <path d="M24 66 H76 V86 Q50 92 24 86Z" fill="#4E5E4A" stroke="#5A4434" stroke-width="4" stroke-linejoin="round"/>
+        <g id="mFace"></g>
+      </g>
+      <g id="mFx"></g>
+    </svg>
+    <span class="mBubble" id="mBubble"></span>
+  </button>
   <div>
     <h1>台元午餐轉轉<button class="ver" id="verBtn" aria-label="改版紀錄"></button></h1>
     <div class="sub" id="greet">今天中午吃什麼？交給我！</div>
@@ -830,6 +854,19 @@ const Snd = (()=>{
     close(){ tone(880,.14,{vol:.14,to:440}); },
     add(){ [72,76,79,84].forEach((n,i)=>tone(N(n),.16,{type:"triangle",vol:.16,at:i*.06})); },
     clear(){ [79,74,71,67].forEach((n,i)=>tone(N(n),.14,{type:"triangle",vol:.13,at:i*.06})); },
+    // 飯糰君
+    boing(){ const o=tone(300,.32,{type:"sine",vol:.3,to:620}); tone(620,.18,{type:"triangle",vol:.12,at:.12,to:380}); },
+    rumble(){ // 肚子咕嚕咕嚕
+      for(let i=0;i<5;i++){ tone(70+Math.random()*30,.16,{type:"triangle",vol:.28,at:i*.13,to:55+Math.random()*25}); tone(140+Math.random()*40,.12,{type:"sine",vol:.08,at:i*.13+.03}); }
+    },
+    content(){ [N(79),N(84),N(88)].forEach((f,i)=>tone(f,.3,{type:"sine",vol:.12,at:i*.09})); tone(N(91),.5,{type:"triangle",vol:.06,at:.27}); },
+    burp(){ tone(120,.22,{type:"sawtooth",vol:.09,to:80}); noise(.18,{vol:.12,freq:400,Q:2}); [N(84),N(88)].forEach((f,i)=>tone(f,.25,{vol:.08,at:.3+i*.08})); },
+    love(){ [N(84),N(88),N(91),N(96)].forEach((f,i)=>tone(f,.35,{type:"sine",vol:.1,at:i*.07})); tone(N(100),.6,{vol:.05,at:.3}); },
+    giggle(){ for(let i=0;i<4;i++) tone(700+i*60,.07,{type:"triangle",vol:.12,at:i*.09,to:900+i*60}); },
+    grumble(){ // 生氣：噗噗噗＋冒煙
+      for(let i=0;i<4;i++) tone(110-i*6,.1,{type:"sawtooth",vol:.12,at:i*.1,to:90});
+      noise(.5,{vol:.12,at:.2,type:"highpass",freq:3000,Q:.7});
+    },
     chime(){ tone(N(88),.4,{vol:.1}); tone(N(93),.5,{vol:.08,at:.08}); },
   };
 
@@ -927,8 +964,9 @@ $("#sfxBtn").onclick=()=>{const v=!Snd.sfxOn; if(!v) Snd.play("toggle",false); S
 
 
 /* ===== 版本 & 改版紀錄 ===== */
-const APP_VERSION = "0.7.4";
+const APP_VERSION = "0.8";
 const CHANGELOG = [
+  ["0.8","11/03","戳戳飯糰君",["點左上角飯糰會被戳到，接著變肚子餓、吃飽飽等表情和音效","一直戳它會生氣冒煙"]],
   ["0.7.4","11/03","視窗好關、不再重複跳",["更新說明只會跳一次，不會每次打開都跳","彈出視窗縮小，右上角加關閉按鈕","結果卡也可以用叉叉關閉"]],
   ["0.7.3","11/03","音樂只播一份",["同時開著桌面 App 和瀏覽器分頁時，只會有一個在播音樂"]],
   ["0.7.2","11/03","修正背景音樂",["背景音樂不再斷斷續續","關掉音樂會立刻停止，切到背景也會自動暫停","要先點一下畫面才會開始播放"]],
@@ -985,6 +1023,81 @@ if(location.search.includes("v=")) try{ history.replaceState(null,"",location.pa
 checkUpdate();
 document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible") checkUpdate(); });
 window.addEventListener("pageshow",e=>{ if(e.persisted) checkUpdate(); });
+
+/* ===== 飯糰君互動：戳一下 → 被戳到 → 隨機心情；連戳會生氣 =====
+   像一個小狀態機：IDLE → POKED → MOOD(hungry/full/love/happy) → IDLE；短時間戳太多 → ANGRY */
+const Mascot = (()=>{
+  const I="#5A4434", C='fill="#FF9C86" opacity=".8"';
+  const cheeks=(o=".8",r=6)=>`<ellipse cx="28" cy="60" rx="${r}" ry="3.5" fill="#FF9C86" opacity="${o}"/><ellipse cx="72" cy="60" rx="${r}" ry="3.5" fill="#FF9C86" opacity="${o}"/>`;
+  const dot=(x,y)=>`<circle cx="${x}" cy="${y}" r="4.5" fill="${I}"/><circle cx="${x+1.5}" cy="${y-1.5}" r="1.4" fill="#fff"/>`;
+  const L=`stroke="${I}" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"`;
+  const FACES = {
+    normal: ()=>dot(37,52)+dot(63,52)+cheeks()+`<path d="M44 57 Q50 63 56 57" ${L}/>`,
+    blink:  ()=>`<path d="M32 52 Q37 55 42 52 M58 52 Q63 55 68 52" ${L}/>`+cheeks()+`<path d="M44 57 Q50 63 56 57" ${L}/>`,
+    poked:  ()=>`<path d="M32 47 L40 52 L32 57 M68 47 L60 52 L68 57" ${L}/>`+cheeks(".95",7)+`<ellipse cx="50" cy="61" rx="4" ry="5" fill="${I}"/>`,
+    hungry: ()=>dot(37,49)+dot(63,49)+cheeks(".6")+`<path d="M42 60 Q46 56 50 60 Q54 56 58 60" ${L}/><path d="M57 61 Q59 67 57 70 Q55 67 57 61Z" fill="#BFDDF7" stroke="${I}" stroke-width="1.6"/>`,
+    full:   ()=>`<path d="M31 53 Q37 46 43 53 M57 53 Q63 46 69 53" ${L}/>`+cheeks("1",7)+`<path d="M41 57 Q50 67 59 57 Z" fill="#E8735E" stroke="${I}" stroke-width="2.6" stroke-linejoin="round"/>`,
+    love:   ()=>[37,63].map(x=>`<path transform="translate(${x} 51)" d="M0 4 Q-7 -1 -4.5 -4.5 Q-2 -7 0 -3.5 Q2 -7 4.5 -4.5 Q7 -1 0 4Z" fill="#F26B5B" stroke="${I}" stroke-width="1.6"/>`).join("")+cheeks("1",7)+`<path d="M44 57 Q50 63 56 57" ${L}/>`,
+    happy:  ()=>`<path d="M32 54 Q37 47 42 54 M58 54 Q63 47 68 54" ${L}/>`+cheeks()+`<path d="M42 57 Q50 66 58 57" ${L}/>`,
+    angry:  ()=>`<path d="M30 43 L43 48 M70 43 L57 48" ${L}/>`+`<circle cx="38" cy="53" r="3.4" fill="${I}"/><circle cx="62" cy="53" r="3.4" fill="${I}"/>`+
+            `<ellipse cx="28" cy="60" rx="7" ry="4" fill="#F26B5B" opacity=".75"/><ellipse cx="72" cy="60" rx="7" ry="4" fill="#F26B5B" opacity=".75"/>`+
+            `<path d="M43 62 Q50 56 57 62" ${L}/>`,
+  };
+  const FX = {
+    angry: `<g stroke="#F26B5B" stroke-width="3" stroke-linecap="round" fill="none"><path d="M74 18 Q78 22 82 18 M78 14 Q82 18 78 22"/></g>
+            <g fill="#fff" stroke="${I}" stroke-width="2"><circle cx="16" cy="20" r="5"><animate attributeName="cy" values="22;8" dur=".7s" repeatCount="indefinite"/><animate attributeName="opacity" values="1;0" dur=".7s" repeatCount="indefinite"/></circle>
+            <circle cx="86" cy="30" r="4"><animate attributeName="cy" values="30;14" dur=".8s" repeatCount="indefinite"/><animate attributeName="opacity" values="1;0" dur=".8s" repeatCount="indefinite"/></circle></g>`,
+    hungry:`<text x="78" y="88" font-size="13" font-weight="900" fill="${I}" font-family="Zen Maru Gothic, sans-serif">咕<animate attributeName="opacity" values="0;1;0" dur="1s" repeatCount="indefinite"/></text>`,
+    full:  `<g fill="#FFE08A" stroke="${I}" stroke-width="1.6"><path d="M84 20 Q85 26 91 27 Q85 28 84 34 Q83 28 77 27 Q83 26 84 20Z"><animateTransform attributeName="transform" type="rotate" values="0 84 27;20 84 27;0 84 27" dur="1s" repeatCount="indefinite"/></path></g>`,
+    love:  `<path d="M84 26 Q76 20 79 15 Q82 11 84 15 Q86 11 89 15 Q92 20 84 26Z" fill="#F26B5B" stroke="${I}" stroke-width="1.6"><animate attributeName="opacity" values="1;0" dur="1.2s" repeatCount="indefinite"/><animateTransform attributeName="transform" type="translate" values="0 4;0 -10" dur="1.2s" repeatCount="indefinite"/></path>`,
+    poked: `<g stroke="#F28C6E" stroke-width="3" stroke-linecap="round"><path d="M8 34 L2 30 M10 24 L5 17 M92 34 L98 30 M90 24 L95 17"/></g>`,
+  };
+  const MOODS = [
+    ["hungry","肚子好餓～","rumble"],
+    ["full","吃飽飽～♪","content"],
+    ["hungry","中午吃什麼？","rumble"],
+    ["love","最喜歡你了！","love"],
+    ["full","嗝～好滿足","burp"],
+    ["happy","嘿嘿，好癢","giggle"],
+  ];
+  const ANGRY_LINES=["不要一直戳啦！","哼！生氣了！","再戳我就不幫你選了！"];
+  let state="normal", timer=null, taps=[], moodIdx=0, angryUntil=0;
+  const el=()=>document.getElementById("mascot");
+  function set(face, cls, fx){
+    document.getElementById("mFace").innerHTML=FACES[face]();
+    document.getElementById("mFx").innerHTML=fx?FX[fx]||"":"";
+    const m=el(); m.classList.remove("poke","angry","full","hungry","love");
+    if(cls){ void m.getBoundingClientRect(); m.classList.add(cls); }
+    state=face;
+  }
+  function say(text,cls){
+    const b=document.getElementById("mBubble"); b.className="mBubble"+(cls?" "+cls:"");
+    if(!text) return; b.textContent=text; void b.offsetWidth; b.classList.add("show");
+  }
+  function back(ms){ clearTimeout(timer); timer=setTimeout(()=>{ set("normal"); say(""); },ms); }
+  function poke(){
+    const t=Date.now(); taps=taps.filter(x=>t-x<2200); taps.push(t);
+    if(taps.length>=5 || t<angryUntil){
+      angryUntil=t+3000; taps=[];
+      set("angry","angry","angry"); say(ANGRY_LINES[Math.floor(Math.random()*ANGRY_LINES.length)],"angry");
+      Snd.play("grumble"); back(3000); return;
+    }
+    clearTimeout(timer);
+    set("poked","poke","poked"); say("");
+    Snd.play("boing");
+    timer=setTimeout(()=>{
+      const [face,line,snd]=MOODS[moodIdx++ % MOODS.length];
+      set(face, face==="happy"?"":face, face==="happy"?"":face);
+      say(line, face); Snd.play(snd);
+      back(2800);
+    },480);
+  }
+  // 閒置時偶爾眨眼
+  setInterval(()=>{ if(state!=="normal") return; set("blink"); setTimeout(()=>{ if(state==="blink") set("normal"); },160); }, 3800);
+  set("normal");
+  return {poke};
+})();
+$("#mascotBtn").onclick=()=>Mascot.poke();
 
 /* tabs */
 document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{
