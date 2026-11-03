@@ -707,16 +707,16 @@ function refresh(){
 const Snd = (()=>{
   let ctx=null, master=null, sfxBus=null, bgmBus=null, noiseBuf=null;
   let sfxOn = store.get("lunch_sfx",true), bgmOn = store.get("lunch_bgm",true);
-  let bgmTimer=null, nextT=0, step16=0, lastClack=0;
+  let lastClack=0;
   function init(){
-    if(ctx) { if(ctx.state==="suspended") ctx.resume(); return true; }
+    if(ctx) { if(ctx.state!=="running" && !document.hidden) ctx.resume(); if(bgmOn && !bgmSrc) startBgm(); return true; }
     try{
       ctx = new (window.AudioContext||window.webkitAudioContext)();
       master=ctx.createGain(); master.gain.value=.9;
       const comp=ctx.createDynamicsCompressor(); comp.threshold.value=-14; comp.ratio.value=4;
       master.connect(comp); comp.connect(ctx.destination);
       sfxBus=ctx.createGain(); sfxBus.gain.value=sfxOn?1:0; sfxBus.connect(master);
-      bgmBus=ctx.createGain(); bgmBus.gain.value=bgmOn?.55:0; bgmBus.connect(master);
+      bgmBus=ctx.createGain(); bgmBus.gain.value=0; bgmBus.connect(master);
       noiseBuf=ctx.createBuffer(1,ctx.sampleRate*1.5,ctx.sampleRate);
       const d=noiseBuf.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
       if(bgmOn) startBgm();
@@ -826,9 +826,10 @@ const Snd = (()=>{
     chime(){ tone(N(88),.4,{vol:.1}); tone(N(93),.5,{vol:.08,at:.08}); },
   };
 
-  /* ---------- 背景音樂：音樂盒風 8 小節循環 ---------- */
-  const BPM=104, S16=60/BPM/4;
-  // 每小節 8 個八分音符（0 = 休息）
+  /* ---------- 背景音樂：音樂盒風 8 小節循環 ----------
+     先用 OfflineAudioContext 一次「錄」成一段 buffer，再無縫循環播放，
+     不靠計時器即時排音符 → 手機忙或切背景也不會斷斷續續 */
+  const BPM=104, S16=60/BPM/4, LOOP=S16*16*8;
   const MEL=[
     76,79,84,0, 79,76,81,79,
     84,0,83,81, 76,0,81,83,
@@ -839,52 +840,72 @@ const Snd = (()=>{
     77,81,84,81, 79,77,76,74,
     74,79,83,86, 84,0,0,0 ];
   const CH=[[48,55,64],[45,52,60],[41,48,57],[43,50,59],[48,55,64],[45,52,60],[41,48,57],[43,50,59]];
-  function musicBox(f,t,vol){
-    const o=ctx.createOscillator(), o2=ctx.createOscillator(), g=ctx.createGain();
-    o.type="sine"; o2.type="sine"; o.frequency.value=f; o2.frequency.value=f*4.01;
-    const g2=ctx.createGain(); g2.gain.value=.12;
-    g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(vol,t+.004); g.gain.exponentialRampToValueAtTime(.0001,t+.9);
-    o.connect(g); o2.connect(g2); g2.connect(g); g.connect(bgmBus);
-    o.start(t); o2.start(t); o.stop(t+1); o2.stop(t+1);
-  }
-  function pluck(f,t,vol,d=.4){
-    const o=ctx.createOscillator(), g=ctx.createGain(); o.type="triangle"; o.frequency.value=f;
-    g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(vol,t+.01); g.gain.exponentialRampToValueAtTime(.0001,t+d);
-    o.connect(g); g.connect(bgmBus); o.start(t); o.stop(t+d+.05);
-  }
-  function shaker(t,vol){
-    const src=ctx.createBufferSource(), f=ctx.createBiquadFilter(), g=ctx.createGain();
-    src.buffer=noiseBuf; f.type="highpass"; f.frequency.value=6000;
-    g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(.0001,t+.05);
-    src.connect(f); f.connect(g); g.connect(bgmBus); src.start(t,Math.random()); src.stop(t+.06);
-  }
-  function schedule(){
-    while(nextT < ctx.currentTime + .25){
-      const bar=Math.floor(step16/16)%8, s=step16%16;
-      if(s%2===0){ const n=MEL[bar*8+s/2]; if(n) musicBox(N(n),nextT,.11); }
-      const ch=CH[bar];
-      if(s===0) pluck(N(ch[0]-12),nextT,.16,.7);
-      if(s===8) pluck(N(ch[0]-5),nextT,.12,.5);
-      if(s===4||s===12){ pluck(N(ch[1]),nextT,.05,.25); pluck(N(ch[2]),nextT,.05,.25); }
-      if(s%4===2) shaker(nextT,.035);
-      nextT+=S16; step16++;
+  let bgmBuf=null, bgmSrc=null, rendering=null;
+  function renderBgm(){
+    if(bgmBuf) return Promise.resolve(bgmBuf);
+    if(rendering) return rendering;
+    const sr=ctx.sampleRate, TAIL=1.2;
+    const oc=new (window.OfflineAudioContext||window.webkitOfflineAudioContext)(1,Math.ceil((LOOP+TAIL)*sr),sr);
+    const out=oc.createGain(); out.gain.value=1; out.connect(oc.destination);
+    const nb=oc.createBuffer(1,sr*.2,sr); const nd=nb.getChannelData(0); for(let i=0;i<nd.length;i++) nd[i]=Math.random()*2-1;
+    const env=(g,t,v,a,d)=>{g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+a);g.gain.exponentialRampToValueAtTime(.0001,t+d);};
+    const box=(f,t,v)=>{const o=oc.createOscillator(),o2=oc.createOscillator(),g=oc.createGain(),g2=oc.createGain();
+      o.frequency.value=f;o2.frequency.value=f*4.01;g2.gain.value=.12;env(g,t,v,.004,.9);
+      o.connect(g);o2.connect(g2);g2.connect(g);g.connect(out);o.start(t);o2.start(t);o.stop(t+1);o2.stop(t+1);};
+    const pluck=(f,t,v,d)=>{const o=oc.createOscillator(),g=oc.createGain();o.type="triangle";o.frequency.value=f;env(g,t,v,.01,d);o.connect(g);g.connect(out);o.start(t);o.stop(t+d+.05);};
+    const shake=(t,v)=>{const s=oc.createBufferSource(),f=oc.createBiquadFilter(),g=oc.createGain();s.buffer=nb;f.type="highpass";f.frequency.value=6000;
+      g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0001,t+.05);s.connect(f);f.connect(g);g.connect(out);s.start(t);s.stop(t+.06);};
+    for(let st=0;st<128;st++){
+      const t=st*S16, bar=Math.floor(st/16), x=st%16, ch=CH[bar];
+      if(x%2===0){const n=MEL[bar*8+x/2]; if(n) box(N(n),t,.11);}
+      if(x===0) pluck(N(ch[0]-12),t,.16,.7);
+      if(x===8) pluck(N(ch[0]-5),t,.12,.5);
+      if(x===4||x===12){pluck(N(ch[1]),t,.05,.25);pluck(N(ch[2]),t,.05,.25);}
+      if(x%4===2) shake(t,.035);
     }
+    rendering=oc.startRendering().then(buf=>{
+      // 把尾音疊回開頭，讓循環接縫聽不出來
+      const d=buf.getChannelData(0), L=Math.floor(LOOP*sr);
+      const loop=ctx.createBuffer(1,L,sr), ld=loop.getChannelData(0);
+      for(let i=0;i<L;i++) ld[i]=d[i]+(i+L<d.length?d[i+L]:0);
+      bgmBuf=loop; return loop;
+    });
+    return rendering;
   }
-  function startBgm(){ if(!ctx||bgmTimer) return; nextT=ctx.currentTime+.1; bgmTimer=setInterval(schedule,60); }
-  function stopBgm(){ clearInterval(bgmTimer); bgmTimer=null; }
+  function startBgm(){
+    if(!ctx||bgmSrc||!bgmOn||document.hidden) return;
+    renderBgm().then(buf=>{
+      if(bgmSrc||!bgmOn||document.hidden) return;
+      const src=ctx.createBufferSource(); src.buffer=buf; src.loop=true; src.connect(bgmBus);
+      bgmBus.gain.cancelScheduledValues(ctx.currentTime);
+      bgmBus.gain.setValueAtTime(0,ctx.currentTime); bgmBus.gain.linearRampToValueAtTime(.55,ctx.currentTime+.6);
+      src.start(); bgmSrc=src;
+    }).catch(()=>{});
+  }
+  function stopBgm(){
+    if(bgmSrc){ try{bgmSrc.stop();}catch(e){} bgmSrc.disconnect(); bgmSrc=null; }
+    if(bgmBus){ bgmBus.gain.cancelScheduledValues(ctx.currentTime); bgmBus.gain.setValueAtTime(0,ctx.currentTime); }
+  }
+  // 切到背景：整個停掉；回到前景：如果音樂是開的才繼續
+  document.addEventListener("visibilitychange",()=>{
+    if(!ctx) return;
+    if(document.hidden){ stopBgm(); ctx.suspend&&ctx.suspend(); }
+    else { ctx.resume&&ctx.resume().then(()=>{ if(bgmOn) startBgm(); }).catch(()=>{}); }
+  });
+  window.addEventListener("pagehide",()=>{ if(ctx){ stopBgm(); try{ctx.close();}catch(e){} ctx=null; bgmBuf=null; rendering=null; } });
 
   return {
     init,
     play(name,...a){ if(!sfxOn) return; if(!init()) return; sfx[name]&&sfx[name](...a); },
     clack(p){ if(ctx) sfx.clack(p); },
     get sfxOn(){return sfxOn}, get bgmOn(){return bgmOn},
-    setSfx(v){ sfxOn=v; store.set("lunch_sfx",v); if(sfxBus) sfxBus.gain.value=v?1:0; },
-    setBgm(v){ bgmOn=v; store.set("lunch_bgm",v); if(!init()) return;
-      bgmBus.gain.setTargetAtTime(v?.55:0,ctx.currentTime,.1); v?startBgm():setTimeout(()=>{if(!bgmOn)stopBgm()},400); },
+    _state(){ return {ctx: ctx?ctx.state:"none", playing: !!bgmSrc, gain: bgmBus?bgmBus.gain.value:null}; },
+    setSfx(v){ sfxOn=v; store.set("lunch_sfx",v); if(sfxBus){ sfxBus.gain.cancelScheduledValues(ctx.currentTime); sfxBus.gain.setValueAtTime(v?1:0,ctx.currentTime); } },
+    setBgm(v){ bgmOn=v; store.set("lunch_bgm",v); if(!init()) return; v?startBgm():stopBgm(); },
   };
 })();
 // iPhone 規定：要使用者先點一下才能出聲
-["pointerdown","touchstart","keydown"].forEach(ev=>document.addEventListener(ev,()=>Snd.init(),{once:false,passive:true}));
+["touchend","click","keydown"].forEach(ev=>document.addEventListener(ev,()=>Snd.init(),{passive:true,capture:true}));
 function paintSndBtns(){
   $("#bgmBtn").innerHTML=ui("note",22); $("#sfxBtn").innerHTML=ui("speaker",22);
   $("#bgmBtn").classList.toggle("off",!Snd.bgmOn); $("#sfxBtn").classList.toggle("off",!Snd.sfxOn);
@@ -894,8 +915,9 @@ $("#sfxBtn").onclick=()=>{const v=!Snd.sfxOn; if(!v) Snd.play("toggle",false); S
 
 
 /* ===== 版本 & 改版紀錄 ===== */
-const APP_VERSION = "0.7.1";
+const APP_VERSION = "0.7.2";
 const CHANGELOG = [
+  ["0.7.2","11/03","修正背景音樂",["背景音樂不再斷斷續續","關掉音樂會立刻停止，切到背景也會自動暫停","要先點一下畫面才會開始播放"]],
   ["0.7.1","11/03","自動更新",["從桌面打開時會自動檢查新版本，有新版就自動更新","修正桌面圖示快取問題（請刪掉舊圖示重新加入一次）"]],
   ["0.7","11/03","版本標籤 & 改版紀錄",["標題旁加上版本號，點一下看改版紀錄","有新版本時，打開 App 會自動跳出這次更新了什麼"]],
   ["0.6","11/03","把手轉轉 & TWD",["拿掉「轉轉看」按鈕，直接轉把手，旁邊有「轉我！」提示","價位單位改為 TWD","跨區時小地圖標出「竹北」「新竹市」"]],
