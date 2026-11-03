@@ -250,7 +250,7 @@ footer{text-align:center;font-size:11.5px;color:var(--ink2);line-height:1.6;marg
   <div class="ticker" id="ticker">轉一下把手，命運幫你決定</div>
 
   <div class="quick">
-    <div class="qlabel"><span data-ic="coin" data-s="18"></span>今天預算 <span class="small">（NT$／人，可複選，不選＝都可以）</span></div>
+    <div class="qlabel"><span data-ic="coin" data-s="18"></span>今天預算 <span class="small">（TWD／人，可複選，不選＝都可以）</span></div>
     <div class="qrow" id="fPrice"></div>
   </div>
 
@@ -265,7 +265,7 @@ footer{text-align:center;font-size:11.5px;color:var(--ink2);line-height:1.6;marg
       <label class="field"><span>店名</span><input id="aName" required placeholder="例如：巷口那家咖哩" maxlength="30"></label>
       <div class="row2">
         <label class="field"><span>地區</span><select id="aArea"></select></label>
-        <label class="field"><span>價位（NT$）</span><select id="aPrice"></select></label>
+        <label class="field"><span>價位（TWD）</span><select id="aPrice"></select></label>
       </div>
       <label class="field"><span>類型</span><select id="aCuisine"></select></label>
       <button class="bigbtn" type="submit" style="font-size:16px;padding:13px">加進扭蛋機</button>
@@ -383,7 +383,7 @@ const UI = {
   pin:`<path d="M12 21.5 Q5 14 5 9.5 A7 7 0 0 1 19 9.5 Q19 14 12 21.5Z" fill="#FFB59E" stroke="${O}" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="9.5" r="2.6" fill="#fff" stroke="${O}" stroke-width="1.6"/>`,
   car:`<path d="M3 15 V12 Q3 10 5 10 L7.5 6 Q8.2 5 9.5 5 H14.5 Q15.8 5 16.5 6 L19 10 Q21 10 21 12 V15 Q21 16.5 19.5 16.5 H4.5 Q3 16.5 3 15Z" fill="#BFE6D6" stroke="${O}" stroke-width="2" stroke-linejoin="round"/><path d="M8.5 10 L9.8 7 H14.2 L15.5 10Z" fill="#fff" stroke="${O}" stroke-width="1.4" stroke-linejoin="round"/><circle cx="7.5" cy="17" r="2.4" fill="${O}"/><circle cx="16.5" cy="17" r="2.4" fill="${O}"/>`,
   walk:`<ellipse cx="8" cy="15" rx="3.4" ry="5" fill="#FFB59E" stroke="${O}" stroke-width="1.8" transform="rotate(-12 8 15)"/><ellipse cx="16" cy="9" rx="3.4" ry="5" fill="#FFB59E" stroke="${O}" stroke-width="1.8" transform="rotate(12 16 9)"/>`,
-  coin:`<circle cx="12" cy="12" r="9" fill="#FFE08A" stroke="${O}" stroke-width="2"/><circle cx="12" cy="12" r="5.8" fill="none" stroke="#E8B84A" stroke-width="1.4"/><path d="M12 8.5 V15.5 M9.8 10.4 Q12 8.8 14 10.3 M10 13.7 Q12 15.3 14.2 13.6" stroke="${O}" stroke-width="1.6" fill="none" stroke-linecap="round"/>`,
+  coin:`<circle cx="12" cy="12" r="9" fill="#FFE08A" stroke="${O}" stroke-width="2"/><circle cx="12" cy="12" r="5.6" fill="none" stroke="#E8B84A" stroke-width="1.6"/><path d="M8.2 8.6 Q9.6 7 11.6 6.8" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"/>`,
   bowl:`<path d="M3 11 H21 Q20.5 20 12 20 Q3.5 20 3 11Z" fill="#FFB59E" stroke="${O}" stroke-width="2" stroke-linejoin="round"/><path d="M8 7 Q7 5 8 3 M12 7 Q11 5 12 3 M16 7 Q15 5 16 3" stroke="#C9B8A8" stroke-width="1.6" fill="none" stroke-linecap="round"/>`,
   map:`<path d="M3 6 L8.5 4 L15.5 6 L21 4 V18 L15.5 20 L8.5 18 L3 20Z" fill="#fff" stroke="${O}" stroke-width="2" stroke-linejoin="round"/><path d="M8.5 4 V18 M15.5 6 V20" stroke="${O}" stroke-width="1.6"/><circle cx="12" cy="11" r="2.2" fill="#F28C6E"/>`,
   refresh:`<path d="M19 12 A7 7 0 1 1 16.5 6.6" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round"/><path d="M17.5 2.5 V7.5 H12.5" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,
@@ -598,7 +598,7 @@ document.addEventListener("click",e=>{
 });
 $("#avoidSw").onclick=()=>{F.avoid=!F.avoid;Snd.play("toggle",F.avoid);store.set("lunch_filter",F);renderFilters();refresh();};
 
-function meta(r){const a=AREAS[r.area];return `${a.name}・${a.min}分・NT$ ${PRICES[r.price].name}`;}
+function meta(r){const a=AREAS[r.area];return `${a.name}・${a.min}分・TWD ${PRICES[r.price].name}`;}
 function renderList(){
   const list=candidates();
   $("#listTitle").innerHTML = ui("shop",20)+(mode==="filter"?"符合條件 ":"扭蛋機裡的店 ")+list.length+" 間";
@@ -613,7 +613,7 @@ function renderHist(){
     const r=all.find(x=>x.id===h.id); if(!r) return "";
     const d=new Date(h.t);
     return `<div class="item"><div class="i-emo" style="background:${CUISINES[r.cui].bg}">${foodSVG(r.cui,36)}</div>
-      <div class="i-main"><div class="i-name">${esc(r.name)}</div><div class="i-meta">${d.getMonth()+1}/${d.getDate()}（${"日一二三四五六"[d.getDay()]}）・NT$ ${PRICES[r.price].name}</div></div></div>`;
+      <div class="i-main"><div class="i-name">${esc(r.name)}</div><div class="i-meta">${d.getMonth()+1}/${d.getDate()}（${"日一二三四五六"[d.getDay()]}）・TWD ${PRICES[r.price].name}</div></div></div>`;
   }).join("") : `<div class="empty">還沒有紀錄<br>按「就吃這間！」就會記下來</div>`;
 }
 /* ===== 扭蛋球物理模擬 =====
@@ -950,6 +950,10 @@ function miniMap(r){
       : `<g transform="translate(${x.toFixed(0)} ${y.toFixed(0)})"><path d="M-8 0 L0 -8 L8 0Z" fill="#FF9C86" stroke="${O}" stroke-width="2" stroke-linejoin="round"/><rect x="-6" y="0" width="12" height="9" fill="#fff" stroke="${O}" stroke-width="2"/></g>`;
   }
   const label=(t,lat,lng)=>{const [x,y]=P(lat,lng);return `<text x="${x.toFixed(0)}" y="${y.toFixed(0)}" font-size="15" font-weight="900" fill="#5A4434" opacity=".16" text-anchor="middle" font-family="Zen Maru Gothic, PingFang TC, sans-serif">${t}</text>`;};
+  const pill=(t,x,y)=>{const w=t.length*15+18;x=Math.min(Math.max(x,w/2+6),W-w/2-6);y=Math.min(Math.max(y,14),H-14);
+    return `<g transform="translate(${x.toFixed(0)} ${y.toFixed(0)})"><rect x="${-w/2}" y="-12" width="${w}" height="24" rx="12" fill="#fff" stroke="${O}" stroke-width="2.5"/><text y="5.5" font-size="14" font-weight="900" fill="${O}" text-anchor="middle" font-family="Zen Maru Gothic, PingFang TC, sans-serif">${t}</text></g>`;};
+  const cross = a.region!=="zb";
+  const tags = cross ? (Math.abs(dx-sx)<70 ? pill("竹北",sx+42,sy) : pill("竹北",sx+(sx<dx?-8:8),sy+(sy<dy?-22:22))) + pill(REGIONS[a.region],dx+(dx<sx?-34:34),dy+10) : "";
   const near = a.walk<=8;
   const head = near ? `${ui("walk",20)}走路約 ${a.walk} 分` : `${ui("car",20)}開車約 ${a.min} 分`;
   const subTxt = near ? `約 ${a.road.toFixed(1)} 公里・開車約 ${a.min} 分` : `約 ${a.road.toFixed(1)} 公里${a.walk<=15?`・走路約 ${a.walk} 分`:""}`;
@@ -957,7 +961,6 @@ function miniMap(r){
     <svg viewBox="0 0 ${W} ${H}">
       <defs><pattern id="grid" width="22" height="22" patternUnits="userSpaceOnUse"><path d="M22 0H0V22" fill="none" stroke="#E2EFD6" stroke-width="2"/></pattern></defs>
       <rect width="${W}" height="${H}" fill="url(#grid)"/>
-      ${label("竹北",24.832,121.005)}${label("新竹市",24.795,120.99)}
       <path d="${river}" fill="none" stroke="#BFDDF7" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
       <path d="${river}" fill="none" stroke="#fff" stroke-width="2" stroke-dasharray="6 10" opacity=".8"/>
       ${deco}
@@ -966,6 +969,7 @@ function miniMap(r){
       <circle cx="${sx.toFixed(1)}" cy="${sy.toFixed(1)}" r="6" fill="#fff" stroke="${O}" stroke-width="3"/>
       <g><svg x="-13" y="-13" width="26" height="26" viewBox="0 0 24 24" overflow="visible">${UI.car}</svg>
         <animateMotion dur="2.6s" repeatCount="indefinite" path="${route}" keyTimes="0;1" keySplines=".4 0 .6 1" calcMode="spline"/></g>
+      ${tags}
       <g transform="translate(${dx.toFixed(1)} ${dy.toFixed(1)})">
         <ellipse cx="0" cy="2" rx="10" ry="4" fill="#5A4434" opacity=".18"/>
         <path d="M0 0 Q-17 -20 -17 -32 A17 17 0 0 1 17 -32 Q17 -20 0 0Z" fill="#FFB59E" stroke="${O}" stroke-width="3" stroke-linejoin="round"/>
@@ -992,7 +996,7 @@ function showResult(r,col){
     ${miniMap(r)}
     <div class="tags">
       <span class="tag t1">${ui(a.min<=5?"walk":"car",16)}約 ${a.min} 分</span>
-      <span class="tag t2">${ui("coin",16)}NT$ ${PRICES[r.price].name}</span>
+      <span class="tag t2">${ui("coin",16)}TWD ${PRICES[r.price].name}</span>
       <span class="tag t3">${foodSVG(r.cui,18)}${c.name}</span>
       <span class="tag t4">${ui("pin",16)}${a.name}</span>
     </div>
