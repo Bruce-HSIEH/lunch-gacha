@@ -90,13 +90,10 @@ h1{font-size:20px;white-space:nowrap;margin:0;font-weight:900;letter-spacing:.5p
 .lid::after{content:"";position:absolute;width:16px;height:16px;border-radius:50%;background:var(--butter);border:3px solid var(--ink);left:50%;top:-14px;transform:translateX(-50%)}
 .globe{width:226px;height:226px;margin:0 auto;border-radius:50%;border:4px solid var(--ink);position:relative;overflow:hidden;z-index:1;
   background:radial-gradient(circle at 35% 30%,#FFFFFF 0%,#EEF7FD 55%,#DCEEFA 100%)}
-.globe::after{content:"";position:absolute;left:30px;top:26px;width:46px;height:70px;border-radius:50%;border-left:7px solid rgba(255,255,255,.95);transform:rotate(18deg);z-index:5;pointer-events:none}
 .cap{position:absolute;left:0;top:0;width:46px;height:46px;border-radius:50%;border:3px solid var(--ink);will-change:transform;
   background:linear-gradient(to bottom,var(--c) 0 50%,#FFFDF8 50% 100%)}
 .cap::after{content:"";position:absolute;left:-3px;right:-3px;top:calc(50% - 1.5px);height:3px;background:var(--ink);opacity:.55}
 .cap i{position:absolute;left:9px;top:7px;width:8px;height:5px;border-radius:50%;background:rgba(255,255,255,.9)}
-.globe-shine{position:absolute;inset:0;border-radius:50%;pointer-events:none;z-index:5;
-  background:radial-gradient(circle at 30% 24%,rgba(255,255,255,.75) 0 9%,transparent 10%)}
 .collar{width:150px;height:24px;margin:-16px auto 0;background:var(--butter);border:4px solid var(--ink);border-radius:12px;position:relative;z-index:3}
 .body{width:244px;height:168px;margin:-4px auto 0;background:var(--red);border:4px solid var(--ink);border-radius:26px 26px 34px 34px;position:relative;z-index:2;
   box-shadow:inset 0 -12px 0 rgba(0,0,0,.07)}
@@ -731,7 +728,7 @@ const START = [[48,186],[94,190],[140,188],[184,182],[60,146],[106,150],[152,146
 let balls = [], stirring = false;
 function renderGlobe(){
   const g = $("#globe");
-  g.innerHTML = START.map((_,i)=>`<div class="cap" style="--c:${CAP_COLORS[i%6]}"><i></i></div>`).join("") + `<div class="globe-shine"></div>`;
+  g.innerHTML = START.map((_,i)=>`<div class="cap" style="--c:${CAP_COLORS[i%6]}"><i></i></div>`).join("") ;
   const els = g.querySelectorAll(".cap");
   balls = START.map(([x,y],i)=>({x,y,vx:0,vy:0,a:Math.random()*6.28,av:0,el:els[i]}));
   for(let k=0;k<120;k++) step(); // 先讓球自然落定
