@@ -21,3 +21,8 @@
 
 ## 資料說明
 店家清單寫在 `index.html` 的 `BASE` 陣列；車程為依區域估計，店家資訊可能變動。
+
+## 改版流程
+1. 修改 `index.html`
+2. 更新 `index.html` 裡的 `APP_VERSION` 和 `CHANGELOG`
+3. 把 `version.json` 改成同一個版本號（App 會用它檢查有沒有新版，自動更新）
