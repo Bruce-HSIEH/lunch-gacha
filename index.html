@@ -1044,8 +1044,9 @@ $("#sfxBtn").onclick=()=>{const v=!Snd.sfxOn; if(!v) Snd.play("toggle",false); S
 
 
 /* ===== 版本 & 改版紀錄 ===== */
-const APP_VERSION = "0.9";
+const APP_VERSION = "0.9.1";
 const CHANGELOG = [
+  ["0.9.1","11/03","飯糰君冷知識",["講完八卦後多戳幾下，飯糰君會問你冷知識","八卦講過了，再生氣也不會重講"]],
   ["0.9","11/03","開機動畫",["全新開機畫面：扭蛋機彈出、扭蛋一顆顆冒出、把手轉一圈，最後飛進首頁","更新說明改在畫面正中央，等開機畫面結束才出現","減少背景運算，讓桌面 App 的音樂更順"]],
   ["0.8.1","11/03","飯糰君有八卦 & 音樂修正",["飯糰君生氣冷靜後再戳，會偷偷講八卦","背景音樂改用更穩定的播放方式，避免斷斷續續"]],
   ["0.8","11/03","戳戳飯糰君",["點左上角飯糰會被戳到，接著變肚子餓、吃飽飽等表情和音效","一直戳它會生氣冒煙"]],
@@ -1153,7 +1154,13 @@ const Mascot = (()=>{
     ["shock","高層全部一次換血！","gasp"],
     ["happy","嘿嘿","giggle"],
   ];
+  // 講完八卦後，正常戳幾下會冒出冷知識
+  const TRIVIA=[
+    [3,"sly","你知道「海老」是蝦子的意思嗎？","whisper"],
+    [2,"sly","你知道煤燈效應是什麼嗎？","whisper"],
+  ];
   let state="normal", timer=null, taps=[], moodIdx=0, angryUntil=0, gossip=-1;
+  let gossipDone=false, triviaIdx=0, normalCount=0;
   const el=()=>document.getElementById("mascot");
   function set(face, cls, fx){
     document.getElementById("mFace").innerHTML=FACES[face]();
@@ -1173,15 +1180,23 @@ const Mascot = (()=>{
     if(taps.length>=5 || t<angryUntil){
       angryUntil=t+3000; taps=[];
       set("angry","angry","angry"); say(ANGRY_LINES[Math.floor(Math.random()*ANGRY_LINES.length)],"angry");
-      Snd.play("grumble"); back(3000); gossip=0; return;
+      Snd.play("grumble"); back(3000); gossip = gossipDone ? -2 : 0; return;
     }
     clearTimeout(timer);
+    if(gossip===-2){   // 八卦已經講過了
+      gossip=-1; set("sly","poke",""); say("我這邊已經沒八卦了","hungry"); Snd.play("giggle"); back(2600); return;
+    }
     if(gossip>=0){
       const [face,line,snd]=GOSSIP[gossip]; gossip = gossip+1<GOSSIP.length ? gossip+1 : -1;
+      if(gossip===-1){ gossipDone=true; normalCount=0; }
       set(face,"poke",face==="sly"?"whisper":""); say(line, face==="shock"?"angry":"hungry"); Snd.play(snd);
       back(gossip===-1?2200:6000);   // 八卦講到一半可以慢慢按
       if(gossip!==-1){ clearTimeout(gTimer); gTimer=setTimeout(()=>{gossip=-1;},6000); }
       return;
+    }
+    if(gossipDone && triviaIdx<TRIVIA.length && ++normalCount>=TRIVIA[triviaIdx][0]){
+      const [,face,line,snd]=TRIVIA[triviaIdx++]; normalCount=0;
+      set(face,"poke","whisper"); say(line,"hungry"); Snd.play(snd); back(3600); return;
     }
     set("poked","poke","poked"); say("");
     Snd.play("boing");
