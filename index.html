@@ -74,6 +74,17 @@ h1{font-size:21px;margin:0;font-weight:900;letter-spacing:.5px;display:flex;alig
 .handle{position:absolute;right:22px;bottom:18px;width:60px;height:60px;border-radius:50%;background:var(--butter);border:4px solid var(--ink);transition:transform 1.6s cubic-bezier(.3,.1,.2,1)}
 .handle::before{content:"";position:absolute;left:50%;top:50%;width:46px;height:14px;border-radius:8px;background:#fff;border:3px solid var(--ink);transform:translate(-50%,-50%)}
 .handle::after{content:"";position:absolute;left:50%;top:50%;width:12px;height:12px;border-radius:50%;background:var(--red);border:3px solid var(--ink);transform:translate(-50%,-50%)}
+
+.handle{cursor:pointer;animation:glow 1.6s ease-in-out infinite}
+@keyframes glow{50%{box-shadow:0 0 0 7px rgba(255,224,138,.65)}}
+.handle:active{filter:brightness(.95)}
+.gacha.busy .handle{animation:none}
+.callout{position:absolute;right:-50px;bottom:66px;z-index:6;pointer-events:none;animation:hop 1s ease-in-out infinite;transform-origin:left bottom}
+.callout span{display:block;background:var(--butter);border:3px solid var(--ink);border-radius:14px;padding:3px 9px;font-size:15px;font-weight:900;white-space:nowrap;box-shadow:0 3px 0 rgba(90,68,52,.25);transform:rotate(6deg)}
+.callout svg{display:block;margin:-2px 0 0 4px}
+@keyframes hop{50%{transform:translate(-3px,-6px)}}
+.gacha.busy .callout,.gacha.empty .callout{opacity:0;transition:.2s}
+.gacha.empty .handle{animation:none;filter:grayscale(.6);opacity:.7}
 .exit{position:absolute;left:24px;bottom:18px;width:82px;height:62px;background:var(--ink);border-radius:16px 16px 22px 22px;overflow:visible}
 .exit::before{content:"";position:absolute;left:6px;right:6px;top:6px;height:22px;border-radius:10px 10px 4px 4px;background:rgba(255,255,255,.18)}
 .feet{display:flex;justify-content:space-between;width:190px;margin:-4px auto 0}
@@ -229,18 +240,20 @@ footer{text-align:center;font-size:11.5px;color:var(--ink2);line-height:1.6;marg
       <div class="sign"><span data-ic="spark" data-s="14"></span>午餐轉轉<span data-ic="spark" data-s="14"></span></div>
       <div class="coin"></div>
       <div class="exit"><div class="outcap" id="outcap"></div></div>
-      <div class="handle" id="handle"></div>
+      <div class="handle" id="handle" role="button" tabindex="0" aria-label="轉扭蛋"></div>
+      <div class="callout" id="callout"><span>轉我！</span>
+        <svg width="34" height="30" viewBox="0 0 34 30"><path d="M28 3 Q30 20 10 24" fill="none" stroke="#5A4434" stroke-width="3.2" stroke-linecap="round"/><path d="M14 18 L8 24.5 L15.5 28" fill="none" stroke="#5A4434" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
     </div>
     <div class="feet"><i></i><i></i></div>
   </div>
   <div class="ticker" id="ticker">轉一下把手，命運幫你決定</div>
 
   <div class="quick">
-    <div class="qlabel"><span data-ic="coin" data-s="18"></span>今天預算 <span class="small">（可複選，不選＝都可以）</span></div>
+    <div class="qlabel"><span data-ic="coin" data-s="18"></span>今天預算 <span class="small">（NT$／人，可複選，不選＝都可以）</span></div>
     <div class="qrow" id="fPrice"></div>
   </div>
 
-  <button class="bigbtn" id="spinBtn"><span data-ic="refresh" data-s="22" data-w="1"></span>轉轉看！</button>
   <div class="count" id="count"></div>
 </section>
 
@@ -252,7 +265,7 @@ footer{text-align:center;font-size:11.5px;color:var(--ink2);line-height:1.6;marg
       <label class="field"><span>店名</span><input id="aName" required placeholder="例如：巷口那家咖哩" maxlength="30"></label>
       <div class="row2">
         <label class="field"><span>地區</span><select id="aArea"></select></label>
-        <label class="field"><span>價位</span><select id="aPrice"></select></label>
+        <label class="field"><span>價位（NT$）</span><select id="aPrice"></select></label>
       </div>
       <label class="field"><span>類型</span><select id="aCuisine"></select></label>
       <button class="bigbtn" type="submit" style="font-size:16px;padding:13px">加進扭蛋機</button>
@@ -585,7 +598,7 @@ document.addEventListener("click",e=>{
 });
 $("#avoidSw").onclick=()=>{F.avoid=!F.avoid;Snd.play("toggle",F.avoid);store.set("lunch_filter",F);renderFilters();refresh();};
 
-function meta(r){const a=AREAS[r.area];return `${a.name}・${a.min}分・${PRICES[r.price].name}`;}
+function meta(r){const a=AREAS[r.area];return `${a.name}・${a.min}分・NT$ ${PRICES[r.price].name}`;}
 function renderList(){
   const list=candidates();
   $("#listTitle").innerHTML = ui("shop",20)+(mode==="filter"?"符合條件 ":"扭蛋機裡的店 ")+list.length+" 間";
@@ -600,7 +613,7 @@ function renderHist(){
     const r=all.find(x=>x.id===h.id); if(!r) return "";
     const d=new Date(h.t);
     return `<div class="item"><div class="i-emo" style="background:${CUISINES[r.cui].bg}">${foodSVG(r.cui,36)}</div>
-      <div class="i-main"><div class="i-name">${esc(r.name)}</div><div class="i-meta">${d.getMonth()+1}/${d.getDate()}（${"日一二三四五六"[d.getDay()]}）・${PRICES[r.price].name}</div></div></div>`;
+      <div class="i-main"><div class="i-name">${esc(r.name)}</div><div class="i-meta">${d.getMonth()+1}/${d.getDate()}（${"日一二三四五六"[d.getDay()]}）・NT$ ${PRICES[r.price].name}</div></div></div>`;
   }).join("") : `<div class="empty">還沒有紀錄<br>按「就吃這間！」就會記下來</div>`;
 }
 /* ===== 扭蛋球物理模擬 =====
@@ -668,7 +681,9 @@ function loop(){ step(); step(); draw(); requestAnimationFrame(loop); }
 function refresh(){
   const n=candidates().length;
   $("#count").textContent = mode==="filter" ? `目前有 ${n} 間符合條件` : (F.prices.length?`這個預算有 ${n} 間店`:`扭蛋機裡有 ${n} 間店`);
-  $("#spinBtn").disabled = n===0;
+  document.querySelector(".gacha").classList.toggle("empty",n===0);
+  if(n===0 && !spinning) $("#ticker").textContent="沒有符合的店家，放寬條件試試";
+  else if(!spinning && $("#ticker").textContent.startsWith("沒有符合")) $("#ticker").textContent="轉一下把手，命運幫你決定";
   renderList(); renderHist();
 }
 
@@ -882,7 +897,7 @@ $("#toggleList").onclick=()=>{Snd.play("pop");const l=$("#list");l.classList.tog
 let current=null, spinning=false, handleDeg=0;
 function spin(){
   const list=candidates(); if(!list.length||spinning) return;
-  spinning=true; $("#spinBtn").disabled=true;
+  spinning=true; document.querySelector(".gacha").classList.add("busy");
   const out=$("#outcap"); out.classList.remove("drop"); out.style.opacity=0;
   stirring=true; $("#mbody").classList.add("shake");
   Snd.play("crank");
@@ -900,13 +915,13 @@ function spin(){
       stirring=false; $("#mbody").classList.remove("shake");
       const col=CAP_COLORS[Math.floor(Math.random()*6)];
       out.style.setProperty("--c",col); void out.offsetWidth; out.classList.add("drop"); Snd.play("drop");
-      setTimeout(()=>{spinning=false;$("#spinBtn").disabled=false;showResult(pick,col);},950);
+      setTimeout(()=>{spinning=false;document.querySelector(".gacha").classList.remove("busy");showResult(pick,col);},950);
     }
   };
   tick();
 }
-$("#spinBtn").onclick=spin;
 $("#handle").onclick=spin;
+$("#handle").onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();spin();}};
 
 
 /* ===== Q 版小地圖（示意圖，不是真的地圖）===== */
@@ -977,7 +992,7 @@ function showResult(r,col){
     ${miniMap(r)}
     <div class="tags">
       <span class="tag t1">${ui(a.min<=5?"walk":"car",16)}約 ${a.min} 分</span>
-      <span class="tag t2">${ui("coin",16)}${PRICES[r.price].name}</span>
+      <span class="tag t2">${ui("coin",16)}NT$ ${PRICES[r.price].name}</span>
       <span class="tag t3">${foodSVG(r.cui,18)}${c.name}</span>
       <span class="tag t4">${ui("pin",16)}${a.name}</span>
     </div>
