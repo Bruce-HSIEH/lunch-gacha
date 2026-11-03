@@ -13,7 +13,7 @@
 ## 使用
 網址：https://bruce-hsieh.github.io/lunch-gacha/
 
-用 iPhone Safari 開啟頁面 → 分享 → 加入主畫面。
+用手機瀏覽器（Safari、Chrome 都可以）開啟頁面 → 分享 → 加入主畫面。步驟圖：`add-to-home-sop.png`
 
 ## 檔案
 - `index.html`：整個 App（HTML + CSS + JS + 自製 SVG 圖示，單一檔案）
