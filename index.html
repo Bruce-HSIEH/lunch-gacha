@@ -39,7 +39,7 @@ header{display:flex;align-items:center;gap:12px;margin:4px 0 14px}
 .snd button{width:40px;height:40px;border-radius:14px;border:2.5px solid var(--line);background:#fff;display:grid;place-items:center;padding:0;transition:.15s}
 .snd button.off{opacity:.45;background:#F6E7D6}
 .snd button:active{transform:scale(.9)}
-h1{font-size:21px;margin:0;font-weight:900;letter-spacing:.5px;display:flex;align-items:center;gap:6px}
+h1{font-size:20px;white-space:nowrap;margin:0;font-weight:900;letter-spacing:.5px;display:flex;align-items:center;gap:6px}
 .sub{font-size:13px;color:var(--ink2);margin-top:3px}
 
 /* tabs */
@@ -148,6 +148,20 @@ h1{font-size:21px;margin:0;font-weight:900;letter-spacing:.5px;display:flex;alig
 .eta b{display:flex;align-items:center;gap:4px;font-size:16px;font-weight:900}
 .eta span{display:block;font-size:11.5px;color:var(--ink2);font-weight:700;margin-left:2px}
 .result{max-height:calc(100vh - 32px);overflow-y:auto}
+
+.ver{border:2px solid var(--line);background:#fff;border-radius:999px;padding:0 6px;font-size:10.5px;flex:none;font-weight:900;color:var(--ink2);margin-left:2px;line-height:1.5;transition:.15s}
+.ver:active{transform:scale(.92)}
+.log{text-align:left}
+.log .new{font-size:13px;color:var(--ink2);font-weight:700;margin:-6px 0 10px}
+.log .all{border:0;background:none;color:var(--ink2);font-size:13px;font-weight:700;text-decoration:underline;margin-top:6px;width:100%}
+.log h3{margin:0 0 12px;font-size:20px;font-weight:900;display:flex;align-items:center;gap:6px}
+.log .v{border-top:2px dashed var(--line);padding:10px 2px}
+.log .v:first-of-type{border-top:0}
+.log .vh{display:flex;align-items:center;gap:8px;font-weight:900;font-size:15px}
+.log .vh i{font-style:normal;background:var(--butter);border:2px solid #F2C85B;border-radius:999px;padding:0 8px;font-size:12.5px}
+.log .vh small{color:var(--ink2);font-weight:700;font-size:12px}
+.log ul{margin:6px 0 0;padding-left:20px;font-size:13.5px;line-height:1.6;color:var(--ink)}
+.log .closeBtn{margin-top:10px;width:100%}
 .r-hint{font-size:13px;color:var(--ink2);font-weight:700}
 .r-name{font-size:24px;font-weight:900;margin:4px 0 10px}
 .tags{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin-bottom:10px}
@@ -198,7 +212,7 @@ footer{text-align:center;font-size:11.5px;color:var(--ink2);line-height:1.6;marg
     <path d="M44 57 Q50 63 56 57" stroke="#5A4434" stroke-width="3" fill="none" stroke-linecap="round"/>
   </svg>
   <div>
-    <h1>台元午餐轉轉</h1>
+    <h1>台元午餐轉轉<button class="ver" id="verBtn" aria-label="改版紀錄"></button></h1>
     <div class="sub" id="greet">今天中午吃什麼？交給我！</div>
   </div>
   <div class="snd">
@@ -878,6 +892,42 @@ function paintSndBtns(){
 }
 $("#bgmBtn").onclick=()=>{Snd.setBgm(!Snd.bgmOn);Snd.play("toggle",Snd.bgmOn);paintSndBtns();toast(Snd.bgmOn?"背景音樂 開":"背景音樂 關");};
 $("#sfxBtn").onclick=()=>{const v=!Snd.sfxOn; if(!v) Snd.play("toggle",false); Snd.setSfx(v); if(v) Snd.play("toggle",true); paintSndBtns();toast(v?"音效 開":"音效 關");};
+
+
+/* ===== 版本 & 改版紀錄 ===== */
+const APP_VERSION = "0.7";
+const CHANGELOG = [
+  ["0.7","11/03","版本標籤 & 改版紀錄",["標題旁加上版本號，點一下看改版紀錄","有新版本時，打開 App 會自動跳出這次更新了什麼"]],
+  ["0.6","11/03","把手轉轉 & TWD",["拿掉「轉轉看」按鈕，直接轉把手，旁邊有「轉我！」提示","價位單位改為 TWD","跨區時小地圖標出「竹北」「新竹市」"]],
+  ["0.5","11/03","音效 & 背景音樂",["音樂盒風背景音樂，右上角可開關","把手咔咔聲、扭蛋碰撞聲、掉落彈跳、打開啵聲","選定後拉炮＋鞭炮＋歡呼","換上新 App 圖示、加入主畫面 SOP 圖"]],
+  ["0.4","11/03","亂跳扭蛋 & Q 版小地圖",["扭蛋在機器裡隨機亂跳","結果卡加上 Q 版小地圖、開車／走路時間","車程改以台元園區（台元二街）為出發點估算"]],
+  ["0.3","11/03","店家大擴充",["扭蛋改為物理滾動","店家從 43 間增加到 90 間，多了很多百元午餐","價位拆成 5 段"]],
+  ["0.2","11/03","可愛改版",["全部改用自製可愛圖示","扭蛋機重新設計","主畫面加入價位快速選單"]],
+  ["0.1","11/03","第一版",["隨機／條件選午餐、口袋名單、Google 地圖導航"]],
+];
+$("#verBtn").textContent = "v"+APP_VERSION;
+function showLog(onlyNew){
+  const list = onlyNew ? CHANGELOG.filter(([v])=>verNum(v)>verNum(onlyNew)) : CHANGELOG;
+  $("#result").innerHTML = `<div class="log">
+    <h3>${ui("spark",20)}${onlyNew?"更新囉！":"改版紀錄"}</h3>
+    ${onlyNew?`<div class="new">午餐轉轉更新到 v${APP_VERSION}，這次多了：</div>`:""}
+    ${list.map(([v,d,t,items])=>`<div class="v"><div class="vh"><i>v${v}</i>${t}<small>${d}</small></div><ul>${items.map(x=>`<li>${x}</li>`).join("")}</ul></div>`).join("")}
+    <button class="btn ${onlyNew?"go":"again"} closeBtn" id="logClose">${onlyNew?"好，來轉午餐！":"關閉"}</button>
+    ${onlyNew?`<button class="all" id="logAll">看全部改版紀錄</button>`:""}</div>`;
+  $("#overlay").classList.add("show");
+  $("#logClose").onclick=()=>closeResult();
+  if(onlyNew) $("#logAll").onclick=()=>{Snd.play("pop");showLog();};
+}
+const verNum=v=>v.split(".").reduce((a,x,i)=>a+(+x)*Math.pow(1000,2-i),0);
+$("#verBtn").onclick = ()=>{ Snd.play("pop"); showLog(); };
+// 開啟時：如果版本比上次看過的新，自動跳出更新內容（第一次使用不跳）
+(function(){
+  const seen = store.get("lunch_seen_ver", null);
+  const used = history.length || custom.length || store.get("lunch_filter",null) || store.get("lunch_bgm",null)!==null;
+  if(seen && verNum(seen) < verNum(APP_VERSION)) setTimeout(()=>showLog(seen),500);
+  else if(!seen && used) setTimeout(()=>showLog("0.6.1"),500);   // v0.7 以前就在用的人
+  store.set("lunch_seen_ver", APP_VERSION);
+})();
 
 /* tabs */
 document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{
