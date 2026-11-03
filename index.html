@@ -740,7 +740,8 @@ const Snd = (()=>{
   let sfxOn = store.get("lunch_sfx",true), bgmOn = store.get("lunch_bgm",true);
   let lastClack=0;
   function init(){
-    if(ctx) { if(ctx.state!=="running" && !document.hidden) ctx.resume(); if(bgmOn && !bgmSrc) startBgm(); return true; }
+    if(bgmOn && !bgmPlaying) startBgm();   // <audio> 要在點擊當下 play()
+    if(ctx) { if(ctx.state!=="running" && !document.hidden) ctx.resume(); return true; }
     try{
       ctx = new (window.AudioContext||window.webkitAudioContext)();
       master=ctx.createGain(); master.gain.value=.9;
@@ -750,7 +751,6 @@ const Snd = (()=>{
       bgmBus=ctx.createGain(); bgmBus.gain.value=0; bgmBus.connect(master);
       noiseBuf=ctx.createBuffer(1,ctx.sampleRate*1.5,ctx.sampleRate);
       const d=noiseBuf.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
-      if(bgmOn) startBgm();
       return true;
     }catch(e){ ctx=null; return false; }
   }
@@ -862,6 +862,8 @@ const Snd = (()=>{
     content(){ [N(79),N(84),N(88)].forEach((f,i)=>tone(f,.3,{type:"sine",vol:.12,at:i*.09})); tone(N(91),.5,{type:"triangle",vol:.06,at:.27}); },
     burp(){ tone(120,.22,{type:"sawtooth",vol:.09,to:80}); noise(.18,{vol:.12,freq:400,Q:2}); [N(84),N(88)].forEach((f,i)=>tone(f,.25,{vol:.08,at:.3+i*.08})); },
     love(){ [N(84),N(88),N(91),N(96)].forEach((f,i)=>tone(f,.35,{type:"sine",vol:.1,at:i*.07})); tone(N(100),.6,{vol:.05,at:.3}); },
+    whisper(){ noise(.35,{vol:.16,freq:2500,Q:.8,to:4500}); tone(N(76),.12,{type:"triangle",vol:.06,at:.05}); },
+    gasp(){ tone(500,.25,{type:"triangle",vol:.18,to:1100}); noise(.2,{vol:.12,freq:1800,Q:1}); [N(72),N(66)].forEach((f,i)=>tone(f,.3,{type:"square",vol:.05,at:.25+i*.18})); },
     giggle(){ for(let i=0;i<4;i++) tone(700+i*60,.07,{type:"triangle",vol:.12,at:i*.09,to:900+i*60}); },
     grumble(){ // 生氣：噗噗噗＋冒煙
       for(let i=0;i<4;i++) tone(110-i*6,.1,{type:"sawtooth",vol:.12,at:i*.1,to:90});
@@ -884,73 +886,81 @@ const Snd = (()=>{
     77,81,84,81, 79,77,76,74,
     74,79,83,86, 84,0,0,0 ];
   const CH=[[48,55,64],[45,52,60],[41,48,57],[43,50,59],[48,55,64],[45,52,60],[41,48,57],[43,50,59]];
-  let bgmBuf=null, bgmSrc=null, rendering=null;
-  function renderBgm(){
-    if(bgmBuf) return Promise.resolve(bgmBuf);
-    if(rendering) return rendering;
-    const sr=ctx.sampleRate, TAIL=1.2;
-    const oc=new (window.OfflineAudioContext||window.webkitOfflineAudioContext)(1,Math.ceil((LOOP+TAIL)*sr),sr);
-    const out=oc.createGain(); out.gain.value=1; out.connect(oc.destination);
-    const nb=oc.createBuffer(1,sr*.2,sr); const nd=nb.getChannelData(0); for(let i=0;i<nd.length;i++) nd[i]=Math.random()*2-1;
-    const env=(g,t,v,a,d)=>{g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+a);g.gain.exponentialRampToValueAtTime(.0001,t+d);};
-    const box=(f,t,v)=>{const o=oc.createOscillator(),o2=oc.createOscillator(),g=oc.createGain(),g2=oc.createGain();
-      o.frequency.value=f;o2.frequency.value=f*4.01;g2.gain.value=.12;env(g,t,v,.004,.9);
-      o.connect(g);o2.connect(g2);g2.connect(g);g.connect(out);o.start(t);o2.start(t);o.stop(t+1);o2.stop(t+1);};
-    const pluck=(f,t,v,d)=>{const o=oc.createOscillator(),g=oc.createGain();o.type="triangle";o.frequency.value=f;env(g,t,v,.01,d);o.connect(g);g.connect(out);o.start(t);o.stop(t+d+.05);};
-    const shake=(t,v)=>{const s=oc.createBufferSource(),f=oc.createBiquadFilter(),g=oc.createGain();s.buffer=nb;f.type="highpass";f.frequency.value=6000;
-      g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0001,t+.05);s.connect(f);f.connect(g);g.connect(out);s.start(t);s.stop(t+.06);};
-    for(let st=0;st<128;st++){
-      const t=st*S16, bar=Math.floor(st/16), x=st%16, ch=CH[bar];
-      if(x%2===0){const n=MEL[bar*8+x/2]; if(n) box(N(n),t,.11);}
-      if(x===0) pluck(N(ch[0]-12),t,.16,.7);
-      if(x===8) pluck(N(ch[0]-5),t,.12,.5);
-      if(x===4||x===12){pluck(N(ch[1]),t,.05,.25);pluck(N(ch[2]),t,.05,.25);}
-      if(x%4===2) shake(t,.035);
-    }
-    rendering=oc.startRendering().then(buf=>{
-      // 把尾音疊回開頭，讓循環接縫聽不出來
-      const d=buf.getChannelData(0), L=Math.floor(LOOP*sr);
-      const loop=ctx.createBuffer(1,L,sr), ld=loop.getChannelData(0);
-      for(let i=0;i<L;i++) ld[i]=d[i]+(i+L<d.length?d[i+L]:0);
-      bgmBuf=loop; return loop;
-    });
-    return rendering;
+  /* 背景音樂改用 <audio> 播放：
+     頁面一載入就用 OfflineAudioContext 把 8 小節「錄」成 WAV，交給 <audio loop> 播。
+     iPhone 對 <audio> 的播放最穩定，不會因為取樣率不同或畫面忙碌而斷斷續續。 */
+  const BGM_SR=32000, BGM_VOL=.42;
+  let bgmEl=null, bgmReady=false, bgmWant=false, bgmPlaying=false;
+  function encodeWav(f32,sr){
+    const n=f32.length, buf=new ArrayBuffer(44+n*2), v=new DataView(buf);
+    const w=(o,str)=>{for(let i=0;i<str.length;i++) v.setUint8(o+i,str.charCodeAt(i));};
+    w(0,"RIFF"); v.setUint32(4,36+n*2,true); w(8,"WAVE"); w(12,"fmt "); v.setUint32(16,16,true); v.setUint16(20,1,true); v.setUint16(22,1,true);
+    v.setUint32(24,sr,true); v.setUint32(28,sr*2,true); v.setUint16(32,2,true); v.setUint16(34,16,true); w(36,"data"); v.setUint32(40,n*2,true);
+    for(let i=0;i<n;i++){ const x=Math.max(-1,Math.min(1,f32[i])); v.setInt16(44+i*2, x<0?x*0x8000:x*0x7FFF, true); }
+    return new Blob([buf],{type:"audio/wav"});
   }
+  function prepareBgm(){
+    try{
+      const sr=BGM_SR, TAIL=1.2;
+      const OAC=window.OfflineAudioContext||window.webkitOfflineAudioContext; if(!OAC) return;
+      const oc=new OAC(1,Math.ceil((LOOP+TAIL)*sr),sr);
+      const out=oc.createGain(); out.gain.value=BGM_VOL; out.connect(oc.destination);
+      const nb=oc.createBuffer(1,Math.floor(sr*.2),sr); const nd=nb.getChannelData(0); for(let i=0;i<nd.length;i++) nd[i]=Math.random()*2-1;
+      const env=(g,t,v,a,d)=>{g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+a);g.gain.exponentialRampToValueAtTime(.0001,t+d);};
+      const box=(f,t,v)=>{const o=oc.createOscillator(),o2=oc.createOscillator(),g=oc.createGain(),g2=oc.createGain();
+        o.frequency.value=f;o2.frequency.value=f*4.01;g2.gain.value=.12;env(g,t,v,.004,.9);
+        o.connect(g);o2.connect(g2);g2.connect(g);g.connect(out);o.start(t);o2.start(t);o.stop(t+1);o2.stop(t+1);};
+      const pluck=(f,t,v,d)=>{const o=oc.createOscillator(),g=oc.createGain();o.type="triangle";o.frequency.value=f;env(g,t,v,.01,d);o.connect(g);g.connect(out);o.start(t);o.stop(t+d+.05);};
+      const shake=(t,v)=>{const s2=oc.createBufferSource(),f=oc.createBiquadFilter(),g=oc.createGain();s2.buffer=nb;f.type="highpass";f.frequency.value=6000;
+        g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0001,t+.05);s2.connect(f);f.connect(g);g.connect(out);s2.start(t);s2.stop(t+.06);};
+      for(let st=0;st<128;st++){
+        const t=st*S16, bar=Math.floor(st/16), x=st%16, ch=CH[bar];
+        if(x%2===0){const n=MEL[bar*8+x/2]; if(n) box(N(n),t,.11);}
+        if(x===0) pluck(N(ch[0]-12),t,.16,.7);
+        if(x===8) pluck(N(ch[0]-5),t,.12,.5);
+        if(x===4||x===12){pluck(N(ch[1]),t,.05,.25);pluck(N(ch[2]),t,.05,.25);}
+        if(x%4===2) shake(t,.035);
+      }
+      oc.startRendering().then(buf=>{
+        const d=buf.getChannelData(0), L=Math.floor(LOOP*sr);
+        const loop=new Float32Array(L*2);                       // 放兩輪，減少循環接縫次數
+        for(let i=0;i<L;i++){ const v=d[i]+(i+L<d.length?d[i+L]:0); loop[i]=v; loop[i+L]=v; }
+        bgmEl=new Audio(); bgmEl.loop=true; bgmEl.preload="auto"; bgmEl.setAttribute("playsinline","");
+        bgmEl.src=URL.createObjectURL(encodeWav(loop,sr));
+        bgmReady=true;
+        if(bgmWant) startBgm();
+      }).catch(()=>{});
+    }catch(e){}
+  }
+  prepareBgm();
   // 同時開好幾個（桌面 App、瀏覽器分頁）時，只讓最後開始播的那個播
   const myId=Math.random().toString(36).slice(2);
   let bc=null; try{ bc=new BroadcastChannel("lunch-bgm"); bc.onmessage=e=>{ if(e.data&&e.data.claim&&e.data.id!==myId) stopBgm(); }; }catch(e){}
   window.addEventListener("storage",e=>{ if(e.key==="lunch_bgm_owner" && e.newValue && !e.newValue.startsWith(myId)) stopBgm(); });
   function claim(){ try{bc&&bc.postMessage({claim:1,id:myId});}catch(e){} try{localStorage.setItem("lunch_bgm_owner",myId+":"+Date.now());}catch(e){} }
   function startBgm(){
-    if(!ctx||bgmSrc||!bgmOn||document.hidden) return;
-    renderBgm().then(buf=>{
-      if(bgmSrc||!bgmOn||document.hidden) return;
-      const src=ctx.createBufferSource(); src.buffer=buf; src.loop=true; src.connect(bgmBus);
-      bgmBus.gain.cancelScheduledValues(ctx.currentTime);
-      bgmBus.gain.setValueAtTime(0,ctx.currentTime); bgmBus.gain.linearRampToValueAtTime(.55,ctx.currentTime+.6);
-      src.start(); bgmSrc=src; claim();
-    }).catch(()=>{});
+    if(!bgmOn||document.hidden||(typeof updating!=="undefined"&&updating)) return;
+    bgmWant=true;
+    if(!bgmReady||bgmPlaying) return;
+    const pr=bgmEl.play(); bgmPlaying=true; claim();
+    if(pr&&pr.catch) pr.catch(()=>{ bgmPlaying=false; });   // iPhone 擋自動播放 → 等下一次點擊
   }
-  function stopBgm(){
-    if(bgmSrc){ try{bgmSrc.stop();}catch(e){} bgmSrc.disconnect(); bgmSrc=null; }
-    if(bgmBus){ bgmBus.gain.cancelScheduledValues(ctx.currentTime); bgmBus.gain.setValueAtTime(0,ctx.currentTime); }
-  }
-  // 切到背景：整個停掉；回到前景：如果音樂是開的才繼續
+  function stopBgm(){ bgmWant=false; bgmPlaying=false; if(bgmEl){ try{bgmEl.pause();}catch(e){} } }
+  // 切到背景：停；回到前景：音樂是開的就繼續
   document.addEventListener("visibilitychange",()=>{
-    if(!ctx) return;
-    if(document.hidden){ stopBgm(); ctx.suspend&&ctx.suspend(); }
-    else { ctx.resume&&ctx.resume().then(()=>{ if(bgmOn) startBgm(); }).catch(()=>{}); }
+    if(document.hidden){ const keep=bgmOn; stopBgm(); if(ctx&&ctx.suspend) ctx.suspend(); }
+    else { if(ctx&&ctx.resume) ctx.resume().catch(()=>{}); if(bgmOn) startBgm(); }
   });
-  window.addEventListener("pagehide",()=>{ if(ctx){ stopBgm(); try{ctx.close();}catch(e){} ctx=null; bgmBuf=null; rendering=null; } });
+  window.addEventListener("pagehide",()=>{ stopBgm(); if(ctx){ try{ctx.close();}catch(e){} ctx=null; } });
 
   return {
     init,
     play(name,...a){ if(!sfxOn) return; if(!init()) return; sfx[name]&&sfx[name](...a); },
     clack(p){ if(ctx) sfx.clack(p); },
     get sfxOn(){return sfxOn}, get bgmOn(){return bgmOn},
-    _state(){ return {ctx: ctx?ctx.state:"none", playing: !!bgmSrc, gain: bgmBus?bgmBus.gain.value:null}; },
+    _state(){ return {ctx: ctx?ctx.state:"none", playing: bgmPlaying && bgmEl && !bgmEl.paused, ready: bgmReady}; },
     setSfx(v){ sfxOn=v; store.set("lunch_sfx",v); if(sfxBus){ sfxBus.gain.cancelScheduledValues(ctx.currentTime); sfxBus.gain.setValueAtTime(v?1:0,ctx.currentTime); } },
-    setBgm(v){ bgmOn=v; store.set("lunch_bgm",v); if(!init()) return; v?startBgm():stopBgm(); },
+    setBgm(v){ bgmOn=v; store.set("lunch_bgm",v); v?startBgm():stopBgm(); init(); },
   };
 })();
 // iPhone 規定：要使用者先點一下才能出聲
@@ -964,8 +974,9 @@ $("#sfxBtn").onclick=()=>{const v=!Snd.sfxOn; if(!v) Snd.play("toggle",false); S
 
 
 /* ===== 版本 & 改版紀錄 ===== */
-const APP_VERSION = "0.8";
+const APP_VERSION = "0.8.1";
 const CHANGELOG = [
+  ["0.8.1","11/03","飯糰君有八卦 & 音樂修正",["飯糰君生氣冷靜後再戳，會偷偷講八卦","背景音樂改用更穩定的播放方式，避免斷斷續續"]],
   ["0.8","11/03","戳戳飯糰君",["點左上角飯糰會被戳到，接著變肚子餓、吃飽飽等表情和音效","一直戳它會生氣冒煙"]],
   ["0.7.4","11/03","視窗好關、不再重複跳",["更新說明只會跳一次，不會每次打開都跳","彈出視窗縮小，右上角加關閉按鈕","結果卡也可以用叉叉關閉"]],
   ["0.7.3","11/03","音樂只播一份",["同時開著桌面 App 和瀏覽器分頁時，只會有一個在播音樂"]],
@@ -1039,6 +1050,8 @@ const Mascot = (()=>{
     full:   ()=>`<path d="M31 53 Q37 46 43 53 M57 53 Q63 46 69 53" ${L}/>`+cheeks("1",7)+`<path d="M41 57 Q50 67 59 57 Z" fill="#E8735E" stroke="${I}" stroke-width="2.6" stroke-linejoin="round"/>`,
     love:   ()=>[37,63].map(x=>`<path transform="translate(${x} 51)" d="M0 4 Q-7 -1 -4.5 -4.5 Q-2 -7 0 -3.5 Q2 -7 4.5 -4.5 Q7 -1 0 4Z" fill="#F26B5B" stroke="${I}" stroke-width="1.6"/>`).join("")+cheeks("1",7)+`<path d="M44 57 Q50 63 56 57" ${L}/>`,
     happy:  ()=>`<path d="M32 54 Q37 47 42 54 M58 54 Q63 47 68 54" ${L}/>`+cheeks()+`<path d="M42 57 Q50 66 58 57" ${L}/>`,
+    sly:    ()=>`<path d="M31 51 H43 M57 51 H69" ${L}/><circle cx="40" cy="53" r="2.6" fill="${I}"/><circle cx="66" cy="53" r="2.6" fill="${I}"/>`+cheeks(".7")+`<path d="M44 59 Q52 63 58 57" ${L}/>`,
+    shock:  ()=>`<circle cx="37" cy="51" r="6" fill="#fff" stroke="${I}" stroke-width="2.6"/><circle cx="63" cy="51" r="6" fill="#fff" stroke="${I}" stroke-width="2.6"/><circle cx="37" cy="51" r="2.4" fill="${I}"/><circle cx="63" cy="51" r="2.4" fill="${I}"/>`+cheeks(".6")+`<ellipse cx="50" cy="61" rx="4.5" ry="5.5" fill="${I}"/>`,
     angry:  ()=>`<path d="M30 43 L43 48 M70 43 L57 48" ${L}/>`+`<circle cx="38" cy="53" r="3.4" fill="${I}"/><circle cx="62" cy="53" r="3.4" fill="${I}"/>`+
             `<ellipse cx="28" cy="60" rx="7" ry="4" fill="#F26B5B" opacity=".75"/><ellipse cx="72" cy="60" rx="7" ry="4" fill="#F26B5B" opacity=".75"/>`+
             `<path d="M43 62 Q50 56 57 62" ${L}/>`,
@@ -1050,18 +1063,25 @@ const Mascot = (()=>{
     hungry:`<text x="78" y="88" font-size="13" font-weight="900" fill="${I}" font-family="Zen Maru Gothic, sans-serif">咕<animate attributeName="opacity" values="0;1;0" dur="1s" repeatCount="indefinite"/></text>`,
     full:  `<g fill="#FFE08A" stroke="${I}" stroke-width="1.6"><path d="M84 20 Q85 26 91 27 Q85 28 84 34 Q83 28 77 27 Q83 26 84 20Z"><animateTransform attributeName="transform" type="rotate" values="0 84 27;20 84 27;0 84 27" dur="1s" repeatCount="indefinite"/></path></g>`,
     love:  `<path d="M84 26 Q76 20 79 15 Q82 11 84 15 Q86 11 89 15 Q92 20 84 26Z" fill="#F26B5B" stroke="${I}" stroke-width="1.6"><animate attributeName="opacity" values="1;0" dur="1.2s" repeatCount="indefinite"/><animateTransform attributeName="transform" type="translate" values="0 4;0 -10" dur="1.2s" repeatCount="indefinite"/></path>`,
+    whisper:`<g fill="none" stroke="#9A8574" stroke-width="2.4" stroke-linecap="round"><path d="M86 40 Q90 44 86 48"><animate attributeName="opacity" values="0;1;0" dur="1s" repeatCount="indefinite"/></path><path d="M91 36 Q97 44 91 52"><animate attributeName="opacity" values="0;1;0" dur="1s" begin=".25s" repeatCount="indefinite"/></path></g>`,
     poked: `<g stroke="#F28C6E" stroke-width="3" stroke-linecap="round"><path d="M8 34 L2 30 M10 24 L5 17 M92 34 L98 30 M90 24 L95 17"/></g>`,
   };
   const MOODS = [
     ["hungry","肚子好餓～","rumble"],
     ["full","吃飽飽～♪","content"],
     ["hungry","中午吃什麼？","rumble"],
-    ["love","最喜歡你了！","love"],
     ["full","嗝～好滿足","burp"],
     ["happy","嘿嘿，好癢","giggle"],
   ];
   const ANGRY_LINES=["不要一直戳啦！","哼！生氣了！","再戳我就不幫你選了！"];
-  let state="normal", timer=null, taps=[], moodIdx=0, angryUntil=0;
+  // 生氣冷靜後的八卦彩蛋：依序一句一句講
+  const GOSSIP=[
+    ["sly","我這裡有一個八卦…","whisper"],
+    ["sly","聽說通Ｘ科技…","whisper"],
+    ["shock","高層全部一次換血！","gasp"],
+    ["happy","嘿嘿","giggle"],
+  ];
+  let state="normal", timer=null, taps=[], moodIdx=0, angryUntil=0, gossip=-1;
   const el=()=>document.getElementById("mascot");
   function set(face, cls, fx){
     document.getElementById("mFace").innerHTML=FACES[face]();
@@ -1075,14 +1095,22 @@ const Mascot = (()=>{
     if(!text) return; b.textContent=text; void b.offsetWidth; b.classList.add("show");
   }
   function back(ms){ clearTimeout(timer); timer=setTimeout(()=>{ set("normal"); say(""); },ms); }
+  let gTimer=null;
   function poke(){
     const t=Date.now(); taps=taps.filter(x=>t-x<2200); taps.push(t);
     if(taps.length>=5 || t<angryUntil){
       angryUntil=t+3000; taps=[];
       set("angry","angry","angry"); say(ANGRY_LINES[Math.floor(Math.random()*ANGRY_LINES.length)],"angry");
-      Snd.play("grumble"); back(3000); return;
+      Snd.play("grumble"); back(3000); gossip=0; return;
     }
     clearTimeout(timer);
+    if(gossip>=0){
+      const [face,line,snd]=GOSSIP[gossip]; gossip = gossip+1<GOSSIP.length ? gossip+1 : -1;
+      set(face,"poke",face==="sly"?"whisper":""); say(line, face==="shock"?"angry":"hungry"); Snd.play(snd);
+      back(gossip===-1?2200:6000);   // 八卦講到一半可以慢慢按
+      if(gossip!==-1){ clearTimeout(gTimer); gTimer=setTimeout(()=>{gossip=-1;},6000); }
+      return;
+    }
     set("poked","poke","poked"); say("");
     Snd.play("boing");
     timer=setTimeout(()=>{
