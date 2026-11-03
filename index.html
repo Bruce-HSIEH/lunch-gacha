@@ -872,6 +872,11 @@ const Snd = (()=>{
     });
     return rendering;
   }
+  // 同時開好幾個（桌面 App、瀏覽器分頁）時，只讓最後開始播的那個播
+  const myId=Math.random().toString(36).slice(2);
+  let bc=null; try{ bc=new BroadcastChannel("lunch-bgm"); bc.onmessage=e=>{ if(e.data&&e.data.claim&&e.data.id!==myId) stopBgm(); }; }catch(e){}
+  window.addEventListener("storage",e=>{ if(e.key==="lunch_bgm_owner" && e.newValue && !e.newValue.startsWith(myId)) stopBgm(); });
+  function claim(){ try{bc&&bc.postMessage({claim:1,id:myId});}catch(e){} try{localStorage.setItem("lunch_bgm_owner",myId+":"+Date.now());}catch(e){} }
   function startBgm(){
     if(!ctx||bgmSrc||!bgmOn||document.hidden) return;
     renderBgm().then(buf=>{
@@ -879,7 +884,7 @@ const Snd = (()=>{
       const src=ctx.createBufferSource(); src.buffer=buf; src.loop=true; src.connect(bgmBus);
       bgmBus.gain.cancelScheduledValues(ctx.currentTime);
       bgmBus.gain.setValueAtTime(0,ctx.currentTime); bgmBus.gain.linearRampToValueAtTime(.55,ctx.currentTime+.6);
-      src.start(); bgmSrc=src;
+      src.start(); bgmSrc=src; claim();
     }).catch(()=>{});
   }
   function stopBgm(){
@@ -915,8 +920,9 @@ $("#sfxBtn").onclick=()=>{const v=!Snd.sfxOn; if(!v) Snd.play("toggle",false); S
 
 
 /* ===== 版本 & 改版紀錄 ===== */
-const APP_VERSION = "0.7.2";
+const APP_VERSION = "0.7.3";
 const CHANGELOG = [
+  ["0.7.3","11/03","音樂只播一份",["同時開著桌面 App 和瀏覽器分頁時，只會有一個在播音樂"]],
   ["0.7.2","11/03","修正背景音樂",["背景音樂不再斷斷續續","關掉音樂會立刻停止，切到背景也會自動暫停","要先點一下畫面才會開始播放"]],
   ["0.7.1","11/03","自動更新",["從桌面打開時會自動檢查新版本，有新版就自動更新","修正桌面圖示快取問題（請刪掉舊圖示重新加入一次）"]],
   ["0.7","11/03","版本標籤 & 改版紀錄",["標題旁加上版本號，點一下看改版紀錄","有新版本時，打開 App 會自動跳出這次更新了什麼"]],
