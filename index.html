@@ -124,6 +124,14 @@ h1{font-size:23px;margin:0;font-weight:900;letter-spacing:.5px;display:flex;alig
 .half.bot{top:55px;border-radius:0 0 35px 35px;background:#FFFDF8;border-top:none;animation:popBot .55s cubic-bezier(.3,.7,.4,1) forwards}
 @keyframes popTop{to{transform:translate(-62px,-14px) rotate(-38deg);opacity:0}}
 @keyframes popBot{to{transform:translate(62px,14px) rotate(32deg);opacity:0}}
+
+/* Q 版小地圖 */
+.mini{position:relative;margin:0 0 12px;border-radius:20px;overflow:hidden;border:3px solid var(--ink);background:#F3F9EC}
+.mini > svg{display:block;width:100%;height:auto}
+.eta{position:absolute;left:10px;top:10px;background:#fff;border:2.5px solid var(--ink);border-radius:14px;padding:5px 10px 5px 7px;text-align:left;box-shadow:0 3px 0 rgba(90,68,52,.18)}
+.eta b{display:flex;align-items:center;gap:4px;font-size:16px;font-weight:900}
+.eta span{display:block;font-size:11.5px;color:var(--ink2);font-weight:700;margin-left:2px}
+.result{max-height:calc(100vh - 32px);overflow-y:auto}
 .r-hint{font-size:13px;color:var(--ink2);font-weight:700}
 .r-name{font-size:24px;font-weight:900;margin:4px 0 10px}
 .tags{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin-bottom:10px}
@@ -192,7 +200,7 @@ footer{text-align:center;font-size:11.5px;color:var(--ink2);line-height:1.6;marg
     <div class="chips" id="fRegion"></div>
   </div>
   <div class="fgroup">
-    <div class="flabel"><span data-ic="car" data-s="18"></span>從台元出發，車程最多</div>
+    <div class="flabel"><span data-ic="car" data-s="18"></span>開車時間最多</div>
     <div class="chips" id="fTime"></div>
   </div>
   <div class="fgroup">
@@ -253,7 +261,7 @@ footer{text-align:center;font-size:11.5px;color:var(--ink2);line-height:1.6;marg
 </section>
 
 <footer>
-  車程為從台元科技園區出發的開車估計，實際依路況。<br>
+  車程與地圖皆為依區域估算的大概值，實際依路況。<br>
   店家資訊可能有變動，出發前用「導航」確認營業時間喔！
 </footer>
 </div>
@@ -367,16 +375,28 @@ function ui(k,size=18,white){return `<svg class="ic" width="${size}" height="${s
 function paintIcons(root=document){root.querySelectorAll("[data-ic]").forEach(el=>{el.outerHTML=ui(el.dataset.ic,+el.dataset.s||18,el.dataset.w);});}
 
 /* ===== 設定表（像 FW 的 config table）===== */
+/* 出發點：通嘉科技（竹北市台元二街1號）— 只用來估算，不顯示在地圖上 */
+const ORIGIN = {lat:24.8425, lng:121.0160};
+/* 各區域代表座標（估計值） */
 const AREAS = {
-  ty:   {name:"台元園區・竹北車站", region:"zb", min:3},
-  gm:   {name:"縣治・光明商圈",     region:"zb", min:8},
-  fe:   {name:"竹北遠百一帶",       region:"zb", min:8},
-  zq:   {name:"自強・文興商圈",     region:"zb", min:10},
-  hsr:  {name:"高鐵特區",           region:"zb", min:15},
-  old:  {name:"新竹舊城・城隍廟",   region:"hc", min:15},
-  gx:   {name:"竹科關新・金山街",   region:"hc", min:18},
-  east: {name:"新竹東區・巨城",     region:"hc", min:20},
+  in:   {name:"台元園區內",         region:"zb", lat:24.8428, lng:121.0168},
+  ty:   {name:"竹北車站・舊城",     region:"zb", lat:24.8395, lng:121.0085},
+  gm:   {name:"縣治・光明商圈",     region:"zb", lat:24.8285, lng:121.0110},
+  fe:   {name:"竹北遠百一帶",       region:"zb", lat:24.8257, lng:121.0236},
+  zq:   {name:"自強・文興商圈",     region:"zb", lat:24.8185, lng:121.0215},
+  hsr:  {name:"高鐵特區・六家",     region:"zb", lat:24.8125, lng:121.0340},
+  old:  {name:"新竹舊城・城隍廟",   region:"hc", lat:24.8044, lng:120.9659},
+  gx:   {name:"竹科關新・金山街",   region:"hc", lat:24.7845, lng:121.0185},
+  east: {name:"新竹東區・巨城",     region:"hc", lat:24.8090, lng:120.9745},
 };
+/* 直線距離(km) → 開車時間：道路係數 1.35、市區均速 28km/h、加 2 分鐘停車 */
+function kmFrom(o,p){const dx=(p.lng-o.lng)*101.0, dy=(p.lat-o.lat)*110.9;return Math.hypot(dx,dy);}
+Object.values(AREAS).forEach(a=>{
+  a.km = kmFrom(ORIGIN,a);
+  a.road = a.km*1.35;
+  a.min = Math.max(1, Math.round(a.road/28*60 + (a.km<.3?0:2)));
+  a.walk = Math.round(a.road/4.5*60);
+});
 const REGIONS = {zb:"竹北市", hc:"新竹市"};
 const PRICES = {p1:{name:"100 以下",q:"≤100"},p2:{name:"100–200",q:"100–200"},p3:{name:"200–300",q:"200–300"},p4:{name:"300–500",q:"300–500"},p5:{name:"500 以上",q:"500+"}};
 const CUISINES = {
@@ -391,7 +411,7 @@ const CAP_COLORS = ["#FFB59E","#BFE6D6","#FFE08A","#D9CCF5","#BFDDF7","#FFD1DC"]
    價位：p1 ≤100、p2 100–200、p3 200–300、p4 300–500、p5 500+ */
 const BASE = [
   // ── 台元園區・竹北車站・舊城 ──
-  ["台元園區美食街","ty","bento","p2","園區內就有，走路就到，下雨天救星","台元科技園區 美食街"],
+  ["台元園區美食街","in","bento","p2","園區內就有，走路就到，下雨天救星","台元科技園區 美食街"],
   ["竹北市場粄條小吃","ty","tw","p1","竹北老市場的客家粄條，便宜又快","竹北市場 粄條"],
   ["竹北市場海鮮麵","ty","noodle","p1","市場裡的銅板海鮮麵，選擇超多","竹北市場海鮮麵"],
   ["原橋下水餃","ty","noodle","p1","竹北人從小吃到大的老字號水餃","原橋下水餃 竹北"],
@@ -496,15 +516,16 @@ const store = {
   set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
 };
 let custom = store.get("lunch_custom",[]);
+if(store.get("lunch_v",0)<4 && store.get("lunch_v",0)>=3){ const f=store.get("lunch_filter",null); if(f&&f.time===20){f.time=25;store.set("lunch_filter",f);} store.set("lunch_v",4); }
 if(store.get("lunch_v",0)<3){ // v0.2 → v0.3 價位表從 4 段改 5 段
   const mp={p1:"p1",p2:"p2",p3:"p4",p4:"p5"};
   custom.forEach(c=>c.price=mp[c.price]||c.price); store.set("lunch_custom",custom);
   const f=store.get("lunch_filter",null); if(f&&f.prices){f.prices=f.prices.map(k=>mp[k]||k);store.set("lunch_filter",f);}
-  store.set("lunch_hist",[]); store.set("lunch_v",3);
+  store.set("lunch_hist",[]); store.set("lunch_v",4);
 }
 let history = store.get("lunch_hist",[]);
 let mode = "random";
-const F = Object.assign({region:"all",time:20,prices:[],cuisines:[],avoid:true}, store.get("lunch_filter",{}));
+const F = Object.assign({region:"all",time:25,prices:[],cuisines:[],avoid:true}, store.get("lunch_filter",{}));
 
 function allRestaurants(){
   return BASE.map(r=>({id:"b:"+r[0],name:r[0],area:r[1],cui:r[2],price:r[3],note:r[4],q:r[5]})).concat(custom);
@@ -534,7 +555,7 @@ function chip(g,k,label,on,color,icon=""){return `<button class="chip ${on?"on":
 function renderFilters(){
   $("#fRegion").innerHTML = chip("region","all","全部",F.region==="all","sky")
     + Object.entries(REGIONS).map(([k,v])=>chip("region",k,v,F.region===k,"sky")).join("");
-  $("#fTime").innerHTML = [5,10,15,20].map(m=>chip("time",m,m+" 分內",F.time===m,"mint",ui(m<=5?"walk":"car",18))).join("");
+  $("#fTime").innerHTML = [5,10,15,25].map(m=>chip("time",m,m===25?"都可以":m+" 分內",F.time===m,"mint",ui(m<=5?"walk":"car",18))).join("");
   $("#fPrice").innerHTML = Object.entries(PRICES).map(([k,v])=>chip("price",k,v.q,F.prices.includes(k),"peach")).join("");
   $("#fCuisine").innerHTML = Object.entries(CUISINES).map(([k,v])=>chip("cui",k,v.name,F.cuisines.includes(k),"",foodSVG(k,22))).join("");
   $("#avoidSw").classList.toggle("on",F.avoid);
@@ -570,11 +591,11 @@ function renderHist(){
 }
 /* ===== 扭蛋球物理模擬 =====
    像 FW 的固定週期 task：每個 frame 跑一次 step()，
-   重力 + 牆壁碰撞 + 球球碰撞；轉動時加上「繞圈攪拌」的力，
+   重力 + 牆壁碰撞 + 球球碰撞；轉動時隨機把球往上踢（像中斷亂入），
    球的旋轉角度依貼著牆滾動的速度計算，看起來就像真的在裡面滾。 */
 const GLOBE_R = 109, CAP_R = 23, CX = 109, CY = 109;
 const START = [[48,186],[94,190],[140,188],[184,182],[60,146],[106,150],[152,146],[82,108],[128,108],[104,70],[40,104],[176,104]];
-let balls = [], stirring = false, stirDir = 1;
+let balls = [], stirring = false;
 function renderGlobe(){
   const g = $("#globe");
   g.innerHTML = START.map((_,i)=>`<div class="cap" style="--c:${CAP_COLORS[i%6]}"><i></i></div>`).join("") + `<div class="globe-shine"></div>`;
@@ -584,16 +605,18 @@ function renderGlobe(){
   draw(); requestAnimationFrame(loop);
 }
 function step(){
-  const G = .22, E = .55;
+  const G = .24, E = stirring ? .8 : .5;
   for(const b of balls){
     b.vy += G;
-    if(stirring){
-      const dx=b.x-CX, dy=b.y-CY, d=Math.hypot(dx,dy)||1;
-      b.vx += (-dy/d)*.5*stirDir + (Math.random()-.5)*.85;   // 繞圈攪拌
-      b.vy += ( dx/d)*.5*stirDir + (Math.random()-.5)*.85 - (b.y>CY+30?.35:0); // 底部往上撈
+    if(stirring && Math.random()<.07){
+      // 像真的扭蛋機：底下的球被隨機往上踢，亂跳亂撞
+      const low = b.y > CY - 10;
+      b.vy -= (low?4.5:2) + Math.random()*5;
+      b.vx += (Math.random()-.5)*7;
+      b.av += (Math.random()-.5)*.35;
     }
     b.vx *= .992; b.vy *= .992;
-    const sp = Math.hypot(b.vx,b.vy); if(sp>9){b.vx*=9/sp;b.vy*=9/sp;}
+    const sp = Math.hypot(b.vx,b.vy); if(sp>11){b.vx*=11/sp;b.vy*=11/sp;}
     b.x += b.vx; b.y += b.vy;
     // 牆壁
     const dx=b.x-CX, dy=b.y-CY, d=Math.hypot(dx,dy), m=GLOBE_R-CAP_R;
@@ -654,7 +677,7 @@ function spin(){
   const list=candidates(); if(!list.length||spinning) return;
   spinning=true; $("#spinBtn").disabled=true;
   const out=$("#outcap"); out.classList.remove("drop"); out.style.opacity=0;
-  stirring=true; stirDir=Math.random()<.5?1:-1; $("#mbody").classList.add("shake");
+  stirring=true; $("#mbody").classList.add("shake");
   handleDeg+=720; $("#handle").style.transform=`rotate(${handleDeg}deg)`;
   let pick=list[Math.floor(Math.random()*list.length)];
   if(list.length>1 && current && pick.id===current.id){const o=list.filter(r=>r.id!==current.id);pick=o[Math.floor(Math.random()*o.length)];}
@@ -676,6 +699,61 @@ function spin(){
 $("#spinBtn").onclick=spin;
 $("#handle").onclick=spin;
 
+
+/* ===== Q 版小地圖（示意圖，不是真的地圖）===== */
+const RIVER = [[121.08,24.785],[121.05,24.793],[121.03,24.799],[121.005,24.806],[120.985,24.813],[120.965,24.821],[120.94,24.832]];
+function miniMap(r){
+  const a = AREAS[r.area], W=320, H=168;
+  // 取出發點與目的地的範圍，最少 1.8km，等比例縮放
+  const cLat=(ORIGIN.lat+a.lat)/2, cLng=(ORIGIN.lng+a.lng)/2;
+  const spanX=Math.max(Math.abs(a.lng-ORIGIN.lng)*101, 1.8), spanY=Math.max(Math.abs(a.lat-ORIGIN.lat)*110.9, 1.0);
+  const k=Math.min((W-90)/spanX,(H-70)/spanY);           // px per km
+  const P=(lat,lng)=>[W/2+(lng-cLng)*101*k + 18, H/2-(lat-cLat)*110.9*k + 8];
+  const [sx,sy]=P(ORIGIN.lat,ORIGIN.lng), [dx,dy]=P(a.lat,a.lng);
+  // 路線：一條彎彎的虛線
+  const mx=(sx+dx)/2, my=(sy+dy)/2, len=Math.hypot(dx-sx,dy-sy)||1;
+  const cx=mx+(-(dy-sy)/len)*len*.22, cy=my+((dx-sx)/len)*len*.22;
+  const route=`M${sx.toFixed(1)} ${sy.toFixed(1)} Q${cx.toFixed(1)} ${cy.toFixed(1)} ${dx.toFixed(1)} ${dy.toFixed(1)}`;
+  const river=RIVER.map(([lng,lat],i)=>{const [x,y]=P(lat,lng);return (i?"L":"M")+x.toFixed(1)+" "+y.toFixed(1);}).join(" ");
+  // 小裝飾：樹和房子（固定亂數，每間店長得一樣）
+  let seed=[...r.name].reduce((h,c)=>(h*31+c.charCodeAt(0))>>>0,7); const rnd=()=>((seed=(seed*1664525+1013904223)>>>0)/4294967296);
+  let deco="";
+  for(let i=0;i<9;i++){
+    const x=20+rnd()*(W-40), y=20+rnd()*(H-36);
+    if(Math.hypot(x-dx,y-dy)<34||Math.hypot(x-sx,y-sy)<22||(x<120&&y<56)) continue;
+    deco += rnd()<.6
+      ? `<g transform="translate(${x.toFixed(0)} ${y.toFixed(0)})"><rect x="-1.5" y="2" width="3" height="6" fill="#B97A4E"/><circle r="7" fill="#9ED7A8" stroke="${O}" stroke-width="2"/></g>`
+      : `<g transform="translate(${x.toFixed(0)} ${y.toFixed(0)})"><path d="M-8 0 L0 -8 L8 0Z" fill="#FF9C86" stroke="${O}" stroke-width="2" stroke-linejoin="round"/><rect x="-6" y="0" width="12" height="9" fill="#fff" stroke="${O}" stroke-width="2"/></g>`;
+  }
+  const label=(t,lat,lng)=>{const [x,y]=P(lat,lng);return `<text x="${x.toFixed(0)}" y="${y.toFixed(0)}" font-size="15" font-weight="900" fill="#5A4434" opacity=".16" text-anchor="middle" font-family="Zen Maru Gothic, PingFang TC, sans-serif">${t}</text>`;};
+  const near = a.walk<=8;
+  const head = near ? `${ui("walk",20)}走路約 ${a.walk} 分` : `${ui("car",20)}開車約 ${a.min} 分`;
+  const subTxt = near ? `約 ${a.road.toFixed(1)} 公里・開車約 ${a.min} 分` : `約 ${a.road.toFixed(1)} 公里${a.walk<=15?`・走路約 ${a.walk} 分`:""}`;
+  return `<div class="mini">
+    <svg viewBox="0 0 ${W} ${H}">
+      <defs><pattern id="grid" width="22" height="22" patternUnits="userSpaceOnUse"><path d="M22 0H0V22" fill="none" stroke="#E2EFD6" stroke-width="2"/></pattern></defs>
+      <rect width="${W}" height="${H}" fill="url(#grid)"/>
+      ${label("竹北",24.832,121.005)}${label("新竹市",24.795,120.99)}
+      <path d="${river}" fill="none" stroke="#BFDDF7" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="${river}" fill="none" stroke="#fff" stroke-width="2" stroke-dasharray="6 10" opacity=".8"/>
+      ${deco}
+      <path d="${route}" fill="none" stroke="#fff" stroke-width="10" stroke-linecap="round"/>
+      <path d="${route}" fill="none" stroke="#F28C6E" stroke-width="5" stroke-linecap="round" stroke-dasharray="2 9"><animate attributeName="stroke-dashoffset" from="22" to="0" dur=".8s" repeatCount="indefinite"/></path>
+      <circle cx="${sx.toFixed(1)}" cy="${sy.toFixed(1)}" r="6" fill="#fff" stroke="${O}" stroke-width="3"/>
+      <g><svg x="-13" y="-13" width="26" height="26" viewBox="0 0 24 24" overflow="visible">${UI.car}</svg>
+        <animateMotion dur="2.6s" repeatCount="indefinite" path="${route}" keyTimes="0;1" keySplines=".4 0 .6 1" calcMode="spline"/></g>
+      <g transform="translate(${dx.toFixed(1)} ${dy.toFixed(1)})">
+        <ellipse cx="0" cy="2" rx="10" ry="4" fill="#5A4434" opacity=".18"/>
+        <path d="M0 0 Q-17 -20 -17 -32 A17 17 0 0 1 17 -32 Q17 -20 0 0Z" fill="#FFB59E" stroke="${O}" stroke-width="3" stroke-linejoin="round"/>
+        <circle cx="0" cy="-32" r="12" fill="#fff" stroke="${O}" stroke-width="2"/>
+        <svg x="-11" y="-43" width="22" height="22" viewBox="0 0 64 64">${FOOD[r.cui]}</svg>
+        <animateTransform attributeName="transform" type="translate" additive="sum" values="0 0;0 -4;0 0" dur="1.4s" repeatCount="indefinite"/>
+      </g>
+    </svg>
+    <div class="eta"><b>${head}</b><span>${subTxt}</span></div>
+  </div>`;
+}
+
 function showResult(r,col){
   current=r; col=col||CAP_COLORS[Math.floor(Math.random()*6)];
   const a=AREAS[r.area], c=CUISINES[r.cui];
@@ -687,6 +765,7 @@ function showResult(r,col){
     </div>
     <div class="r-hint">${hints[Math.floor(Math.random()*hints.length)]}</div>
     <div class="r-name">${esc(r.name)}</div>
+    ${miniMap(r)}
     <div class="tags">
       <span class="tag t1">${ui(a.min<=5?"walk":"car",16)}約 ${a.min} 分</span>
       <span class="tag t2">${ui("coin",16)}${PRICES[r.price].name}</span>
