@@ -252,7 +252,7 @@ footer{text-align:center;font-size:11.5px;color:var(--ink2);line-height:1.6;marg
 @keyframes spCap{0%{opacity:0;scale:.2}100%{opacity:1;scale:1}}
 #splash.sp-live .sp-stage .handle{animation:spCrank 1.1s cubic-bezier(.3,.1,.2,1) 1.2s both}
 @keyframes spCrank{to{rotate:720deg}}
-#splash .sp-title{position:absolute;left:0;right:0;top:calc(20% + 462px);text-align:center;font-size:30px;font-weight:900;color:var(--ink);white-space:nowrap;transform-origin:0 0}
+#splash .sp-title{position:absolute;left:0;right:0;top:calc(20% + 462px);text-align:center;font-size:30px;font-weight:900;letter-spacing:.75px;color:var(--ink);white-space:nowrap;transform-origin:0 0}
 #splash .sp-title span{display:inline-block;opacity:0}
 #splash.sp-live .sp-title span{animation:spLetter .5s cubic-bezier(.2,1.6,.4,1) both;animation-delay:calc(.5s + var(--i) * 80ms)}
 @keyframes spLetter{0%{opacity:0;translate:0 14px;scale:.6}100%{opacity:1;translate:0 0;scale:1}}
@@ -1043,8 +1043,9 @@ $("#sfxBtn").onclick=()=>{const v=!Snd.sfxOn; if(!v) Snd.play("toggle",false); S
 
 
 /* ===== 版本 & 改版紀錄 ===== */
-const APP_VERSION = "1.0.0";
+const APP_VERSION = "1.0.1";
 const CHANGELOG = [
+  ["1.0.1","11/04","開機動畫更順",["開機時標題飛到首頁的位置對準了，不會再看到殘影"]],
   ["1.0.0","11/03","正式上線！",["台元午餐轉轉 v1.0.0 正式上線，謝謝大家一起試用","最下方加上版權標示","飯糰君對話泡泡的小三角形稍微分開"]],
   ["0.9.1","11/03","飯糰君冷知識",["講完八卦後多戳幾下，飯糰君會問你冷知識","八卦講過了，再生氣也不會重講"]],
   ["0.9","11/03","開機動畫",["全新開機畫面：扭蛋機彈出、扭蛋一顆顆冒出、把手轉一圈，最後飛進首頁","更新說明改在畫面正中央，等開機畫面結束才出現","減少背景運算，讓桌面 App 的音樂更順"]],
@@ -1421,19 +1422,30 @@ paintIcons(); paintSndBtns(); renderGlobe(); renderFilters(); refresh();
       el.style.transform=`translate(${b.left-a.left}px,${b.top-a.top}px) scale(${sc})`;
     };
     const t=$("#spTitle"), h1=document.querySelector("header h1");
-    const range=document.createRange(); range.selectNodeContents(h1.firstChild); // 只量文字，不含版本標籤
-    const tr=range.getBoundingClientRect();
-    const tb=t.getBoundingClientRect(), spanW=[...t.children].reduce((w,c)=>w+c.getBoundingClientRect().width,0);
-    const tl=tb.left+(tb.width-spanW)/2;
-    t.style.left=tl+"px"; t.style.right="auto"; t.style.textAlign="left";
+    // 起點、終點都用「文字本身」的框來量（Range），兩邊同一種量法，縮放後字形才會完全重疊
+    const textBox=el=>{ const r=document.createRange(); r.selectNodeContents(el); return r.getBoundingClientRect(); };
+    const tb0=t.getBoundingClientRect(), sw=[...t.children].reduce((w,c)=>w+c.getBoundingClientRect().width,0);
+    t.style.left=(tb0.left+(tb0.width-sw)/2)+"px"; t.style.right="auto"; t.style.textAlign="left";
+    const tr=textBox(h1.firstChild);   // 只量文字，不含版本標籤
     requestAnimationFrame(()=>{
-      const sc=tr.width/spanW;
+      // 開機標題每個字包在 <span> 裡：量每個字的「文字節點」（不是 span 外框），跟首頁標題同一把尺
+      const cs=[...t.children].map(c=>textBox(c.firstChild));
+      const sr={left:cs[0].left, top:Math.min(...cs.map(r=>r.top)), width:cs[cs.length-1].right-cs[0].left};
+      const sc=tr.width/sr.width, tl=t.getBoundingClientRect();
+      // transform-origin 是左上角：縮放後文字框左上角 = tl + (sr - tl) * sc
+      const dx=tr.left-(tl.left+(sr.left-tl.left)*sc), dy=tr.top-(tl.top+(sr.top-tl.top)*sc);
       t.style.transition="transform .75s cubic-bezier(.6,0,.15,1)";
-      t.style.transform=`translate(${tr.left-tl}px,${tr.top-t.getBoundingClientRect().top-2}px) scale(${sc})`;
+      t.style.transform=`translate(${dx.toFixed(2)}px,${dy.toFixed(2)}px) scale(${sc.toFixed(4)})`;
       fly(g,real);
       sp.classList.add("sp-exit");
     });
-    setTimeout(()=>{ document.body.classList.remove("sp-flying"); sp.classList.add("sp-fade"); },780);
+    // 落地瞬間直接換手：飛過來的那份馬上消失、首頁的同時出現，不做交叉淡化，就不會有殘影
+    let landed=false;
+    const land=()=>{ if(landed) return; landed=true;
+      t.style.visibility="hidden"; g.style.visibility="hidden";
+      document.body.classList.remove("sp-flying"); sp.classList.add("sp-fade"); };
+    t.addEventListener("transitionend",e=>{ if(e.propertyName==="transform") land(); },{once:true});
+    setTimeout(land,820);
     setTimeout(finish,1150);
   }
   // 至少停 2.4 秒（字和標語都出來後再走）；保險最多 4 秒
