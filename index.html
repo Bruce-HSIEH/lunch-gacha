@@ -479,6 +479,103 @@ const FOOD = {
 };
 function foodSVG(k,size=40){return `<svg class="ic" width="${size}" height="${size}" viewBox="0 0 64 64">${FOOD[k]}</svg>`;}
 
+/* ===== 每間店的專屬可愛圖示 =====
+   招牌菜插畫（DISH）＋ 依店名雜湊決定：碗盤顏色、表情、小配件
+   → 同樣是牛肉麵，不同店也長得不一樣 */
+const DI = "#5A4434";
+const DS = `stroke="${DI}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"`;
+const DS2 = `stroke="${DI}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"`;
+const BOWLS = ["#FFB59E","#FFE08A","#BFE6D6","#BFDDF7","#D9CCF5","#FFD1DC","#FFFFFF"];
+const bowl = c => `<path d="M7 30 H57 Q55 55 32 55 Q9 55 7 30Z" fill="${c}" ${DS}/>`;
+const plate = (c,y=44) => `<ellipse cx="32" cy="${y}" rx="27" ry="11" fill="${c}" ${DS}/><ellipse cx="32" cy="${y-1}" rx="20" ry="6.5" fill="none" stroke="${DI}" stroke-width="1.4" opacity=".25"/>`;
+const steam = (x=32,y=12) => `<path d="M${x-9} ${y+4} Q${x-12} ${y} ${x-9} ${y-4} M${x} ${y+3} Q${x-3} ${y-1} ${x} ${y-5} M${x+9} ${y+4} Q${x+6} ${y} ${x+9} ${y-4}" stroke="#C9B8A8" stroke-width="2.4" fill="none" stroke-linecap="round"/>`;
+const sticks = `<path d="M44 4 L32 28" ${DS}/><path d="M52 7 L38 29" ${DS}/>`;
+
+// 每個 dish：(主色) => [插畫, 臉 x, 臉 y, 臉大小]
+const DISH = {
+  beefnoodle: c => [sticks+bowl(c)+`<path d="M11 30 Q16 25 21 30 Q26 25 31 30 Q36 25 41 30 Q46 25 53 30" fill="none" stroke="#E8A93A" stroke-width="3" stroke-linecap="round"/><rect x="14" y="21" width="12" height="8" rx="3" fill="#A8664A" ${DS2}/><rect x="30" y="20" width="12" height="8" rx="3" fill="#A8664A" ${DS2}/><circle cx="46" cy="25" r="2" fill="#7CC48D"/><circle cx="24" cy="18" r="1.8" fill="#7CC48D"/>`,32,43,1],
+  ramen: c => [bowl(c)+`<rect x="40" y="10" width="9" height="20" rx="1.5" fill="#3E5640" ${DS2}/><ellipse cx="20" cy="25" rx="8" ry="6" fill="#fff" ${DS2}/><circle cx="20" cy="25" r="3.2" fill="#FFB547"/><circle cx="33" cy="24" r="6" fill="#fff" ${DS2}/><path d="M30 24 Q33 21 36 24 Q33 27 31 25" stroke="#F28C9E" stroke-width="1.8" fill="none"/><path d="M11 30 Q15 27 19 30 M44 30 Q48 27 53 30" stroke="#E8A93A" stroke-width="2.6" fill="none" stroke-linecap="round"/>`,32,43,1],
+  dumpling: c => [plate(c,46)+`<path d="M10 40 Q12 24 28 24 Q36 24 38 40Z" fill="#FFF6EA" ${DS}/><path d="M15 27 L13 24 M21 25 L20 21 M27 24.5 L28 21 M33 26 L35 23" ${DS2}/><path d="M30 42 Q32 26 46 26 Q56 27 56 42Z" fill="#FFF6EA" ${DS}/><path d="M37 28 L35 25 M43 26.5 L43 23 M49 27.5 L51 24" ${DS2}/>`,24,35,.7],
+  potsticker: c => [plate(c,46)+[10,24,38].map(x=>`<path d="M${x} 44 Q${x} 28 ${x+8} 28 Q${x+16} 28 ${x+16} 44Z" fill="#FFF6EA" ${DS2}/><path d="M${x+1} 41 H${x+15} V44 H${x+1}Z" fill="#E8A93A"/>`).join(""),32,37,.62],
+  xlb: c => [`<rect x="8" y="34" width="48" height="18" rx="5" fill="#E8C48E" ${DS}/><path d="M8 40 H56 M8 46 H56" stroke="${DI}" stroke-width="1.6" opacity=".5"/>`+`<path d="M12 36 Q10 22 24 17 Q30 13 32 8 Q34 13 40 17 Q54 22 52 36Z" fill="#FFF6EA" ${DS}/><path d="M32 8 Q29 15 25 19 M32 8 Q35 15 39 19" ${DS2} fill="none" opacity=".6"/>`,32,27,.85],
+  braisedrice: c => [bowl(c)+`<path d="M9 30 Q12 15 32 15 Q52 15 55 30Z" fill="#fff" ${DS}/><path d="M16 27 Q20 20 27 22 Q33 17 40 22 Q47 20 49 27Z" fill="#9B5E3C" ${DS}/><ellipse cx="44" cy="20" rx="7" ry="5" fill="#C68A55" ${DS2}/><circle cx="44" cy="20" r="2.6" fill="#FFC94D"/>`,32,42,1],
+  duckrice: c => [bowl(c)+`<path d="M9 30 Q12 15 32 15 Q52 15 55 30Z" fill="#fff" ${DS}/>`+[16,26,36].map((x,i)=>`<path d="M${x} 27 Q${x+6} ${16+i} ${x+13} 24" fill="#E7B98A" ${DS2}/>`).join("")+`<rect x="44" y="20" width="7" height="5" rx="2" fill="#9ED7A8" ${DS2}/>`,32,42,1],
+  chickenrice: c => [bowl(c)+`<path d="M9 30 Q12 15 32 15 Q52 15 55 30Z" fill="#fff" ${DS}/><path d="M17 25 Q22 19 28 24 M24 21 Q30 17 36 23 M32 20 Q38 18 44 24 M20 27 Q30 23 46 27" stroke="#F3D49A" stroke-width="3.4" fill="none" stroke-linecap="round"/><rect x="42" y="16" width="8" height="6" rx="2" fill="#FFE05A" ${DS2}/>`,32,42,1],
+  bento: c => [`<rect x="6" y="14" width="52" height="40" rx="10" fill="${c}" ${DS}/><rect x="11" y="19" width="42" height="30" rx="6" fill="#FFF6EA" ${DS}/><path d="M34 19 V49" ${DS}/><circle cx="44" cy="27" r="5" fill="#8FD19E" ${DS}/><rect x="38" y="36" width="12" height="8" rx="3" fill="#FFE08A" ${DS}/><circle cx="22" cy="25" r="2.6" fill="#F26B5B"/>`,22,36,.85],
+  porkchop: c => [`<rect x="6" y="16" width="52" height="38" rx="10" fill="${c}" ${DS}/><rect x="10" y="20" width="44" height="30" rx="6" fill="#fff" ${DS2}/><path d="M14 40 Q12 26 26 24 Q42 22 48 30 Q52 42 36 44 Q20 46 14 40Z" fill="#E6A24C" ${DS}/><path d="M20 30 l2 2 M28 28 l2 2 M38 29 l2 2 M24 38 l2 2 M42 36 l2 2" stroke="#B9772F" stroke-width="2" stroke-linecap="round"/>`,31,35,.8],
+  drumstick: c => [plate(c,48)+`<path d="M44 40 L52 50" stroke="#fff" stroke-width="7" stroke-linecap="round"/><path d="M44 40 L52 50" ${DS} fill="none" opacity="0"/><circle cx="53" cy="50" r="3.6" fill="#fff" ${DS2}/><circle cx="50" cy="53" r="3.6" fill="#fff" ${DS2}/><path d="M10 26 Q12 10 28 10 Q42 10 46 26 Q50 40 38 44 Q22 48 14 40 Q8 34 10 26Z" fill="#D98A3D" ${DS}/><path d="M18 16 Q22 13 26 14" stroke="#F5C27A" stroke-width="2.4" fill="none" stroke-linecap="round"/>`,28,28,.85],
+  ricenoodle: c => [bowl(c)+`<ellipse cx="32" cy="30" rx="24" ry="5" fill="#F4ECDD" ${DS2}/><path d="M14 30 Q20 22 26 29 M24 28 Q30 21 36 28 M34 29 Q40 22 46 29" stroke="#fff" stroke-width="3.4" fill="none" stroke-linecap="round"/><ellipse cx="44" cy="24" rx="6" ry="4" fill="#F2B6A0" ${DS2}/><circle cx="19" cy="25" r="1.8" fill="#7CC48D"/><circle cx="36" cy="22" r="1.8" fill="#7CC48D"/>`,32,43,1],
+  misua: c => [bowl(c)+`<ellipse cx="32" cy="30" rx="24" ry="6" fill="#B9773F" ${DS2}/>`+[[18,27],[28,25],[38,28],[46,26]].map(([x,y])=>`<ellipse cx="${x}" cy="${y}" rx="3.6" ry="2.6" fill="#C9C3B8" ${DS2}/>`).join("")+`<path d="M22 24 l3 -3 M24 24 l-1 -4" stroke="#7CC48D" stroke-width="2.2" stroke-linecap="round"/>`,32,43,1],
+  stinkytofu: c => [plate(c,46)+[[10,24],[26,20],[38,26]].map(([x,y])=>`<rect x="${x}" y="${y}" width="16" height="16" rx="4" fill="#E2A34C" ${DS}/><circle cx="${x+5}" cy="${y+5}" r="1.4" fill="#B9772F"/><circle cx="${x+11}" cy="${y+10}" r="1.4" fill="#B9772F"/>`).join("")+`<path d="M44 42 Q48 38 52 42 Q48 44 44 42Z" fill="#F7EFAE" ${DS2}/>`,34,29,.62],
+  congee: c => [bowl(c)+`<ellipse cx="32" cy="30" rx="24" ry="6" fill="#FFFDF4" ${DS2}/><circle cx="20" cy="28" r="1.6" fill="#7CC48D"/><circle cx="25" cy="26" r="1.6" fill="#7CC48D"/><path d="M38 29 L42 24 L46 29Z" fill="#6E6A3C" ${DS2}/><circle cx="16" cy="12" r="0" fill="none"/>`+steam(32,14),32,43,1],
+  soup: c => [`<path d="M4 34 H12 M52 34 H60" ${DS}/><path d="M10 28 H54 V40 Q54 54 32 54 Q10 54 10 40Z" fill="#B97A5A" ${DS}/><path d="M12 26 Q32 14 52 26Z" fill="#9C6448" ${DS}/><circle cx="32" cy="17" r="3.4" fill="#E8C48E" ${DS2}/>`+steam(32,8),32,40,1],
+  friedrice: c => [plate(c,46)+`<path d="M10 44 Q12 20 32 18 Q52 20 54 44Z" fill="#F8D774" ${DS}/>`+[[20,30,"#7CC48D"],[28,25,"#F28C6E"],[38,27,"#7CC48D"],[44,34,"#F28C6E"],[24,37,"#F28C6E"],[34,38,"#7CC48D"]].map(([x,y,f])=>`<circle cx="${x}" cy="${y}" r="2.2" fill="${f}"/>`).join("")+`<ellipse cx="50" cy="18" rx="5" ry="7" fill="#fff" ${DS2} transform="rotate(30 50 18)"/>`,32,34,.85],
+  curry: c => [plate(c,40)+`<path d="M10 38 Q14 24 30 26 Q32 42 18 46 Q10 44 10 38Z" fill="#FFFDF8" ${DS}/><path d="M30 26 Q50 24 54 38 Q52 48 32 49 Q24 49 18 46 Q32 42 30 26Z" fill="#E5A83A" ${DS}/><circle cx="40" cy="35" r="3" fill="#F28C6E" ${DS2}/><circle cx="46" cy="41" r="2.4" fill="#8FD19E" ${DS2}/>`,20,35,.72],
+  thai: c => [plate(c,46)+`<circle cx="30" cy="34" r="17" fill="#F2BE5E" ${DS}/><path d="M30 17 V51 M13 34 H47 M18 22 L42 46 M42 22 L18 46" stroke="#D99A3A" stroke-width="1.6" opacity=".6"/><path d="M48 32 Q58 34 54 44 Q48 42 48 32Z" fill="#9ED36A" ${DS2}/><circle cx="51" cy="24" r="2.6" fill="#F26B5B"/>`,30,34,.8],
+  pho: c => [bowl(c)+`<ellipse cx="32" cy="30" rx="24" ry="6" fill="#F6E2C0" ${DS2}/><path d="M14 30 Q22 25 30 30 Q38 25 48 30" stroke="#fff" stroke-width="3.2" fill="none" stroke-linecap="round"/><ellipse cx="22" cy="25" rx="6" ry="3.6" fill="#E88C8C" ${DS2}/><ellipse cx="36" cy="24" rx="6" ry="3.6" fill="#E88C8C" ${DS2}/><path d="M46 20 Q52 18 50 25 Q46 25 46 20Z" fill="#6DBE6D" ${DS2}/><path d="M50 26 Q56 30 52 32" fill="#C7E36F" ${DS2}/>`,32,43,1],
+  hainan: c => [plate(c,46)+`<path d="M8 44 Q10 30 22 30 Q32 30 32 44Z" fill="#fff" ${DS}/>`+[34,40,46].map(x=>`<path d="M${x} 44 Q${x-2} 26 ${x+6} 22 Q${x+10} 30 ${x+8} 44Z" fill="#FBE6C8" ${DS2}/>`).join("")+`<circle cx="52" cy="20" r="2.2" fill="#7CC48D"/>`,20,38,.66],
+  pasta: c => [`<path d="M50 6 V22 M46 6 V14 M54 6 V14 M46 14 Q50 18 54 14" ${DS} fill="none"/>`+plate(c,44)+`<path d="M10 42 Q10 22 30 20 Q50 22 50 42 Q30 48 10 42Z" fill="#FFD27A" ${DS}/><path d="M18 30 Q26 26 32 32 Q38 26 44 32" fill="none" stroke="#E8A93A" stroke-width="2.6" stroke-linecap="round"/><circle cx="30" cy="22" r="5" fill="#F26B5B" ${DS}/>`,30,37,.85],
+  pizza: c => [`<path d="M32 6 L56 50 Q32 58 8 50Z" fill="#F6C55E" ${DS}/><path d="M8 50 Q32 58 56 50 L54 46 Q32 54 10 46Z" fill="#D98A3D" ${DS2}/><circle cx="30" cy="26" r="3.4" fill="#E2534A" ${DS2}/><circle cx="22" cy="40" r="3.4" fill="#E2534A" ${DS2}/><circle cx="42" cy="38" r="3.4" fill="#E2534A" ${DS2}/>`,32,38,.78],
+  burger: c => [`<path d="M8 30 Q8 10 32 10 Q56 10 56 30Z" fill="#F5B963" ${DS}/><path d="M20 18 l2 -1 M30 15 l2 1 M40 18 l2 -1" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/><path d="M6 33 Q12 29 18 33 Q24 29 30 33 Q36 29 42 33 Q48 29 58 33" fill="none" stroke="#7CC48D" stroke-width="4" stroke-linecap="round"/><rect x="8" y="35" width="48" height="8" rx="4" fill="#9B6644" ${DS}/><path d="M8 46 H56 Q56 54 32 54 Q8 54 8 46Z" fill="${c==="#FFFFFF"?"#F5B963":"#F5B963"}" ${DS}/><path d="M10 34 L16 40 L22 34" fill="#FFD447" ${DS2}/>`,32,23,.85],
+  brunch: c => [plate(c,46)+`<rect x="10" y="22" width="26" height="22" rx="6" fill="#F1C27D" ${DS}/><rect x="13" y="25" width="20" height="16" rx="4" fill="#FBE3B5"/><ellipse cx="44" cy="36" rx="11" ry="8" fill="#fff" ${DS}/><circle cx="44" cy="35" r="4.6" fill="#FFB52E" ${DS2}/><path d="M38 20 Q42 16 46 20" stroke="#7CC48D" stroke-width="3" fill="none" stroke-linecap="round"/>`,23,33,.68],
+  salad: c => [bowl(c)+`<path d="M10 30 Q12 14 22 18 Q26 8 34 14 Q42 8 46 18 Q56 16 54 30Z" fill="#8FD19E" ${DS}/><circle cx="24" cy="24" r="3.6" fill="#F26B5B" ${DS2}/><circle cx="40" cy="22" r="3" fill="#FFE08A" ${DS2}/><path d="M30 20 Q33 17 36 20" stroke="#4F9A5F" stroke-width="2" fill="none"/>`,32,43,1],
+  sushi: c => [plate(c,48)+`<rect x="9" y="30" width="46" height="20" rx="10" fill="#fff" ${DS}/><path d="M6 31 Q10 17 32 16 Q56 16 58 30 Q56 34 32 34 Q8 34 6 31Z" fill="#FF9C7A" ${DS}/><path d="M18 20 L24 31 M30 18 L35 32 M42 18 L46 31" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/>`,32,41,.85],
+  donburi: c => [bowl(c)+`<path d="M9 30 Q12 15 32 15 Q52 15 55 30Z" fill="#fff" ${DS}/><path d="M14 28 Q18 18 28 20 Q24 26 14 28Z M26 27 Q30 16 40 18 Q38 25 26 27Z" fill="#C97B4E" ${DS2}/><ellipse cx="45" cy="22" rx="7" ry="5.5" fill="#FFF8E7" ${DS2}/><circle cx="45" cy="22" r="3" fill="#FFB52E"/><circle cx="20" cy="18" r="1.6" fill="#7CC48D"/>`,32,42,1],
+  tonkatsu: c => [plate(c,46)+`<path d="M38 44 Q34 30 46 26 Q56 30 54 44Z" fill="#B6E39A" ${DS2}/><path d="M40 40 L50 32 M42 43 L52 36" stroke="#7CC48D" stroke-width="1.6"/>`+[8,17,26].map((x,i)=>`<rect x="${x}" y="${26-i}" width="10" height="20" rx="3" fill="#E6A24C" ${DS2}/><rect x="${x+2}" y="${28-i}" width="6" height="16" rx="2" fill="#FBEBD5"/>`).join(""),20,36,.6],
+  korean: c => [`<path d="M4 28 H11 M53 28 H60" ${DS}/><path d="M9 26 H55 V40 Q55 54 32 54 Q9 54 9 40Z" fill="#6E5A50" ${DS}/><ellipse cx="32" cy="26" rx="23" ry="7" fill="#F26B5B" ${DS}/><rect x="22" y="19" width="9" height="8" rx="2" fill="#fff" ${DS2}/><circle cx="40" cy="25" r="3.4" fill="#FFE08A" ${DS2}/><circle cx="16" cy="26" r="2" fill="#8FD19E"/>`+steam(32,8),32,42,1],
+  hotpot: c => [`<path d="M3 32 H10 M54 32 H61" ${DS}/><path d="M9 28 H55 V38 Q55 54 32 54 Q9 54 9 38Z" fill="${c}" ${DS}/><ellipse cx="32" cy="28" rx="23" ry="7" fill="#FF8F78" ${DS}/><circle cx="24" cy="27" r="3" fill="#FFE08A" stroke="${DI}" stroke-width="2"/><path d="M36 26 h8" stroke="#8FD19E" stroke-width="3.4" stroke-linecap="round"/>`+steam(32,10),32,42,1],
+  yakiniku: c => [`<circle cx="32" cy="36" r="24" fill="#5A4A44" ${DS}/><circle cx="32" cy="36" r="18" fill="none" stroke="#8C7A70" stroke-width="2"/><path d="M16 30 H48 M14 38 H50 M18 46 H46" stroke="#8C7A70" stroke-width="2"/><path d="M18 26 Q26 20 34 26 Q28 32 18 26Z" fill="#F28C8C" ${DS2}/><path d="M34 34 Q42 28 50 34 Q42 40 34 34Z" fill="#E86A6A" ${DS2}/>`+steam(32,6),26,44,.7],
+  steak: c => [`<ellipse cx="32" cy="44" rx="28" ry="12" fill="#C9935F" ${DS}/><ellipse cx="32" cy="40" rx="24" ry="10" fill="#3D3633" ${DS}/><path d="M14 38 Q16 26 30 26 Q46 26 48 36 Q48 46 32 46 Q16 46 14 38Z" fill="#8A4B32" ${DS}/><path d="M20 34 L28 30 M26 40 L36 34 M34 42 L42 36" stroke="#5E2E1E" stroke-width="2.2" stroke-linecap="round"/>`+steam(46,14),31,36,.75],
+  hkcafe: c => [plate(c,48)+`<path d="M10 40 Q8 20 32 18 Q56 20 54 40 Q32 48 10 40Z" fill="#F2B652" ${DS}/><path d="M18 24 L40 42 M28 21 L50 38 M14 32 L28 44 M46 22 L22 44 M36 20 L14 38 M52 30 L36 45" stroke="#C98A2E" stroke-width="1.6" opacity=".7"/><rect x="24" y="12" width="16" height="9" rx="2" fill="#FFF3B0" ${DS2}/>`,32,33,.82],
+  roastduck: c => [plate(c,48)+`<path d="M10 40 Q8 24 24 22 Q30 12 40 14 Q48 16 46 24 Q56 30 54 40 Q32 50 10 40Z" fill="#B8542E" ${DS}/><path d="M40 14 L48 10 L46 18" fill="#F2A23A" ${DS2}/><path d="M16 30 Q22 26 28 30" stroke="#E08A55" stroke-width="2.4" fill="none" stroke-linecap="round"/>`,30,36,.8],
+  bun: c => [plate(c,50)+`<path d="M10 44 Q8 26 24 20 Q30 16 32 10 Q34 16 40 20 Q56 26 54 44 Q32 52 10 44Z" fill="#FFFDF8" ${DS}/><path d="M32 10 Q30 18 26 21 M32 10 Q34 18 38 21" ${DS2} fill="none" opacity=".55"/><path d="M16 30 l4 -2 M44 30 l-4 -2 M46 38 l-3 -1" stroke="#7CC48D" stroke-width="2.4" stroke-linecap="round"/>`,32,36,1],
+  buffet: c => [`<ellipse cx="32" cy="42" rx="28" ry="14" fill="${c}" ${DS}/><rect x="12" y="30" width="14" height="9" rx="4" fill="#fff" ${DS2}/><rect x="12" y="27" width="14" height="5" rx="2" fill="#FF9C7A" ${DS2}/><path d="M30 34 Q36 24 44 30 Q42 38 34 38Z" fill="#FF8F78" ${DS2}/><path d="M42 40 L52 40 L47 32Z" fill="#FFE08A" ${DS2}/><circle cx="20" cy="46" r="3" fill="#8FD19E" ${DS2}/><circle cx="40" cy="48" r="2.6" fill="#D9CCF5" ${DS2}/>`,32,15,.8],
+  lamb: c => [`<path d="M3 32 H10 M54 32 H61" ${DS}/><path d="M9 28 H55 V38 Q55 54 32 54 Q9 54 9 38Z" fill="#9C6B4E" ${DS}/><path d="M12 28 Q32 8 52 28Z" fill="#FFF8EE" ${DS}/><path d="M14 22 Q6 18 10 12 Q16 14 18 20Z M50 22 Q58 18 54 12 Q48 14 46 20Z" fill="#FFF8EE" ${DS2}/><circle cx="20" cy="22" r="3" fill="#fff" ${DS2}/><circle cx="30" cy="16" r="3" fill="#fff" ${DS2}/><circle cx="42" cy="18" r="3" fill="#fff" ${DS2}/>`,32,42,1],
+  veg: c => [bowl(c)+`<path d="M12 30 Q20 6 40 12 Q36 28 12 30Z" fill="#7CC48D" ${DS}/><path d="M14 29 Q26 20 36 14" stroke="#4F9A5F" stroke-width="2" fill="none"/><rect x="36" y="20" width="14" height="10" rx="3" fill="#FFF6E0" ${DS2}/><circle cx="48" cy="16" r="3" fill="#FFB59E" ${DS2}/>`,32,43,1],
+  sausage: c => [`<ellipse cx="32" cy="46" rx="26" ry="8" fill="${c}" ${DS}/><path d="M8 38 Q6 22 32 22 Q58 22 56 38 Q32 46 8 38Z" fill="#FFF8EC" ${DS}/><path d="M12 32 Q12 24 32 24 Q52 24 52 32 Q52 38 32 38 Q12 38 12 32Z" fill="#C8473A" ${DS}/><path d="M18 28 l3 2 M30 27 l3 2 M42 28 l3 2" stroke="#F2A090" stroke-width="2" stroke-linecap="round"/><path d="M20 22 q2 -4 4 0 M38 22 q2 -4 4 0" stroke="#7CC48D" stroke-width="2.4" fill="none"/>`,32,32,.7],
+  friedchicken: c => [`<path d="M12 26 L52 26 L47 56 L17 56Z" fill="#fff" ${DS}/><path d="M22 26 L24 56 M32 26 V56 M42 26 L40 56" stroke="#E2534A" stroke-width="5"/><path d="M12 26 L52 26 L47 56 L17 56Z" fill="none" ${DS}/><path d="M14 26 Q12 12 22 12 Q26 6 32 10 Q38 4 44 11 Q54 12 50 26Z" fill="#D98A3D" ${DS}/>`,32,41,.85],
+  noodle: c => [sticks+bowl(c)+`<path d="M12 30 Q16 24 20 30 Q24 24 28 30 Q32 24 36 30 Q40 24 44 30 Q48 24 52 30" fill="none" stroke="#E8A93A" stroke-width="3" stroke-linecap="round"/><path d="M22 24 Q30 18 38 24 Z" fill="#9B5E3C" ${DS2}/><circle cx="40" cy="22" r="1.8" fill="#7CC48D"/>`,32,42,1],
+  fish: c => [bowl(c)+`<ellipse cx="32" cy="30" rx="24" ry="6" fill="#F6EEDC" ${DS2}/><path d="M14 26 Q26 18 40 26 L48 20 L47 30 L40 28 Q26 34 14 26Z" fill="#E8E4DA" ${DS2}/><circle cx="19" cy="25" r="1.4" fill="${DI}"/><path d="M26 22 l2 -3 M30 22 l1 -3" stroke="#7CC48D" stroke-width="2" stroke-linecap="round"/>`,32,43,1],
+  hk: c => [bowl(c)+`<path d="M9 30 Q12 15 32 15 Q52 15 55 30Z" fill="#fff" ${DS}/><path d="M13 28 Q16 18 26 20 Q24 26 13 28Z" fill="#D8533C" ${DS2}/><path d="M26 26 Q30 16 40 19 Q38 26 26 26Z" fill="#E86B4C" ${DS2}/><path d="M38 27 Q44 17 52 22 Q48 28 38 27Z" fill="#FBE6C8" ${DS2}/><path d="M18 18 l2 -3" stroke="#7CC48D" stroke-width="2.4" stroke-linecap="round"/>`,32,42,1],
+  teppan: c => [`<rect x="6" y="30" width="52" height="22" rx="6" fill="#4A4442" ${DS}/><path d="M16 40 Q22 30 30 38 Q26 44 16 40Z" fill="#FF9C7A" ${DS2}/><path d="M34 38 Q40 28 50 36 Q46 44 34 38Z" fill="#F7D07A" ${DS2}/><path d="M44 6 L52 24 M48 22 L58 28 L54 32 L46 26Z" fill="#D8D2CC" ${DS2}/>`+steam(24,18),32,46,.62],
+};
+const DARK = new Set(["steak","yakiniku","teppan","korean","soup","lamb"]);
+const DISH_KEYS = Object.keys(DISH);
+
+function faceV(x,y,s,v,ink=DI){
+  const DI_=ink;
+  const eyes = v===4 ? `<path d="M-8.5 1 Q-6 -3 -3.5 1 M3.5 1 Q6 -3 8.5 1" stroke="${DI_}" stroke-width="2.4" fill="none" stroke-linecap="round"/>`
+             : v===2 ? `<circle cx="-6" cy="0" r="2.4" fill="${DI_}"/><path d="M3.5 0 Q6 -2.5 8.5 0" stroke="${DI_}" stroke-width="2.4" fill="none" stroke-linecap="round"/>`
+             : `<circle cx="-6" cy="0" r="2.4" fill="${DI_}"/><circle cx="6" cy="0" r="2.4" fill="${DI_}"/><circle cx="-5.2" cy="-.9" r=".8" fill="#fff"/><circle cx="6.8" cy="-.9" r=".8" fill="#fff"/>`;
+  const mouth = v===1 ? `<path d="M-3 3.6 Q0 8.6 3 3.6Z" fill="#E8735E" stroke="${DI_}" stroke-width="1.8" stroke-linejoin="round"/>`
+              : v===3 ? `<path d="M-3 4 Q0 7 3 4" stroke="${DI_}" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M-.6 5.6 Q.8 8.6 2.2 5.4" fill="#F28C9E" stroke="${DI_}" stroke-width="1.2"/>`
+              : `<path d="M-3 4 Q0 7 3 4" stroke="${DI_}" stroke-width="2.2" fill="none" stroke-linecap="round"/>`;
+  return `<g transform="translate(${x} ${y}) scale(${s})">${eyes}${mouth}<ellipse cx="-11" cy="4.5" rx="3.2" ry="2" fill="#FF8F78" opacity=".55"/><ellipse cx="11" cy="4.5" rx="3.2" ry="2" fill="#FF8F78" opacity=".55"/></g>`;
+}
+// 小配件（右上角）
+const ACC = [
+  ``,
+  `<g transform="translate(51 9)"><path d="M-6 3 H6 V6 H-6Z" fill="#fff" ${DS2}/><path d="M-6 3 Q-9 -4 -3 -4 Q0 -9 3 -4 Q9 -4 6 3Z" fill="#fff" ${DS2}/></g>`,      // 廚師帽
+  `<g transform="translate(52 9)"><path d="M0 0 L-7 -4 L-7 4Z M0 0 L7 -4 L7 4Z" fill="#FF8FB1" ${DS2}/><circle r="2" fill="#FF8FB1" ${DS2}/></g>`,                          // 蝴蝶結
+  `<g transform="translate(52 9)"><path d="M0 6 V-1" ${DS2}/><path d="M0 0 Q-7 -2 -6 -7 Q-1 -6 0 0Z M0 -1 Q6 -4 7 -8 Q2 -9 0 -1Z" fill="#8FD19E" ${DS2}/></g>`,         // 小芽
+  `<path transform="translate(53 9)" d="M0 -6 Q.8 -.8 6 0 Q.8 .8 0 6 Q-.8 .8 -6 0 Q-.8 -.8 0 -6Z" fill="#FFE08A" ${DS2}/>`,                                                  // 閃亮
+  `<path transform="translate(53 9)" d="M0 5 Q-7 0 -5 -4 Q-2 -7 0 -3 Q2 -7 5 -4 Q7 0 0 5Z" fill="#F26B5B" ${DS2}/>`,                                                         // 愛心
+  `<g transform="translate(52 9)"><circle r="5.5" fill="#FFE08A" ${DS2}/><path d="M-2 -1 h4 M0 -3 v4" stroke="${DI}" stroke-width="1.6"/></g>`,                               // 小金牌
+  `<g transform="translate(52 10)"><path d="M-6 3 L-6 -3 L-3 0 L0 -5 L3 0 L6 -3 L6 3Z" fill="#FFD447" ${DS2}/></g>`,                                                          // 皇冠
+];
+function hashName(s){ let h=2166136261; for(const ch of s){ h^=ch.codePointAt(0); h=Math.imul(h,16777619)>>>0; } return h>>>0; }
+function restIcon(r,size=40){
+  const key = DISH[r.dish] ? r.dish : ({tw:"braisedrice",bento:"bento",noodle:"noodle",jp:"sushi",kr:"korean",sea:"thai",west:"pasta",hotpot:"hotpot",cn:"xlb",fast:"burger",healthy:"salad",curry:"curry"})[r.cui]||"bento";
+  const h = hashName(r.name);
+  const col = BOWLS[h % BOWLS.length], v = (h>>>4) % 5, acc = ACC[(h>>>8) % ACC.length];
+  const [art,fx,fy,fs] = DISH[key](col);
+  const ink = DARK.has(key) ? "#FFF4E6" : DI;
+  return `<svg class="ic" width="${size}" height="${size}" viewBox="0 0 64 64">${art}${faceV(fx,fy,fs,v,ink)}${acc}</svg>`;
+}
+
+FOOD.curry = FOOD.sea;
+FOOD.sea = (()=>{const [a,x,y,k]=DISH.thai("#FFFFFF");return a+faceV(x,y,k,0);})();
+
 const UI = {
   dice:`<rect x="3" y="3" width="18" height="18" rx="5" fill="#fff" stroke="${O}" stroke-width="2"/><circle cx="8" cy="8" r="1.6" fill="${O}"/><circle cx="12" cy="12" r="1.6" fill="#F28C6E"/><circle cx="16" cy="16" r="1.6" fill="${O}"/>`,
   search:`<circle cx="10.5" cy="10.5" r="6.5" fill="#BFDDF7" stroke="${O}" stroke-width="2"/><path d="M15.5 15.5 L20.5 20.5" stroke="${O}" stroke-width="2.6" stroke-linecap="round"/><path d="M7.5 9 Q8.5 7 10.5 6.8" stroke="#fff" stroke-width="1.6" fill="none" stroke-linecap="round"/>`,
@@ -513,6 +610,7 @@ const AREAS = {
   fe:   {name:"竹北遠百一帶",       region:"zb", lat:24.8257, lng:121.0236},
   zq:   {name:"自強・文興商圈",     region:"zb", lat:24.8185, lng:121.0215},
   hsr:  {name:"高鐵特區・六家",     region:"zb", lat:24.8125, lng:121.0340},
+  zbx:  {name:"竹北市區",           region:"zb", lat:24.8280, lng:121.0150},
   old:  {name:"新竹舊城・城隍廟",   region:"hc", lat:24.8044, lng:120.9659},
   gx:   {name:"竹科關新・金山街",   region:"hc", lat:24.7845, lng:121.0185},
   east: {name:"新竹東區・巨城",     region:"hc", lat:24.8090, lng:120.9745},
@@ -531,7 +629,7 @@ const CUISINES = {
   tw:{name:"台式小吃",bg:"#FFE9C7"}, bento:{name:"便當自助",bg:"#FFE3D8"}, noodle:{name:"麵食",bg:"#FFF1B8"},
   jp:{name:"日式",bg:"#FFD9D2"}, kr:{name:"韓式",bg:"#FFD1C4"}, sea:{name:"泰越南洋",bg:"#D9F2E3"},
   west:{name:"西式義式",bg:"#E3DAF7"}, hotpot:{name:"火鍋燒肉",bg:"#FFD6D6"}, cn:{name:"中式港式",bg:"#FCE3C2"},
-  fast:{name:"速食輕食",bg:"#FFF0C9"}, healthy:{name:"健康餐",bg:"#D6F0DF"},
+  fast:{name:"速食輕食",bg:"#FFF0C9"}, healthy:{name:"健康餐",bg:"#D6F0DF"}, curry:{name:"咖哩",bg:"#FFE7B8"},
 };
 const CAP_COLORS = ["#FFB59E","#BFE6D6","#FFE08A","#D9CCF5","#BFDDF7","#FFD1DC"];
 
@@ -539,103 +637,165 @@ const CAP_COLORS = ["#FFB59E","#BFE6D6","#FFE08A","#D9CCF5","#BFDDF7","#FFD1DC"]
    價位：p1 ≤100、p2 100–200、p3 200–300、p4 300–500、p5 500+ */
 const BASE = [
   // ── 台元園區・竹北車站・舊城 ──
-  ["台元園區美食街","in","bento","p2","園區內就有，走路就到，下雨天救星","台元科技園區 美食街"],
-  ["竹北市場粄條小吃","ty","tw","p1","竹北老市場的客家粄條，便宜又快","竹北市場 粄條"],
-  ["竹北市場海鮮麵","ty","noodle","p1","市場裡的銅板海鮮麵，選擇超多","竹北市場海鮮麵"],
-  ["原橋下水餃","ty","noodle","p1","竹北人從小吃到大的老字號水餃","原橋下水餃 竹北"],
-  ["小飛俠手工麵線糊總舖","ty","tw","p1","配料滿滿的麵線糊，只開到中午","小飛俠手工麵線糊 竹北"],
-  ["博愛街臭豆腐","ty","tw","p1","外酥內嫩臭豆腐＋魯肉飯、青醬乾麵","博愛街臭豆腐 竹北"],
-  ["懷念夜市臭豆腐小吃","ty","tw","p1","麵飯均一價超佛心，月底救星","懷念夜市臭豆腐 竹北"],
-  ["竹豐麻油雞","ty","tw","p2","冷天來一碗麻油雞，暖呼呼","竹豐麻油雞 竹北"],
-  ["日日香便當","ty","bento","p1","在地平價便當，內用白飯湯品免費","日日香便當 竹北"],
-  ["粥大福 竹北博愛店","ty","tw","p1","熱粥配小自助吧，胃不舒服首選","粥大福 竹北博愛"],
-  ["溫家水餃","ty","noodle","p1","超夯水餃，沒時間等的人慎入","溫家水餃 竹北"],
-  ["有飯吃 健康餐盒","ty","healthy","p1","大份量健康便當，菜色天天換","有飯吃健康餐盒 竹北"],
-  ["貝穀 南洋雞飯 博愛店","ty","sea","p2","海南雞飯，清爽不油膩","貝穀 南洋雞飯 竹北"],
-  ["505 Thai 泰式定食","ty","sea","p2","一個人也能吃的泰式定食","505 Thai 泰式定食 竹北"],
-  ["三代目牛肉麵","ty","noodle","p3","舊城區人氣牛肉麵，湯頭濃郁","三代目牛肉麵 竹北"],
-  ["台南鱔魚麵","ty","noodle","p2","甜甜酸酸的台南味鱔魚意麵","台南鱔魚麵 竹北 勝利二路"],
-  ["十一街麵食館","ty","noodle","p1","現包水餃，四種口味","十一街麵食館 竹北"],
-  ["中大水餃鍋貼館","ty","noodle","p1","鍋貼水餃快速解決一餐","中大水餃鍋貼館 竹北"],
-  ["妙觀音素食 竹北勝利店","ty","healthy","p1","自助素食，想吃清淡時","妙觀音素食 竹北勝利"],
-  ["禾迎蔥燒包","ty","tw","p1","竹北市場的蔥燒包，邊走邊吃","禾迎蔥燒包 竹北"],
-  ["八方雲集","ty","noodle","p1","鍋貼＋酸辣湯，永遠不會錯","八方雲集 竹北"],
-  ["麥當勞","ty","fast","p2","趕時間、開會前的安全牌","麥當勞 竹北"],
-  ["竹北站前自助餐","ty","bento","p1","夾自己想吃的，營養均衡一點","竹北火車站 自助餐"],
-  ["越南河粉","ty","sea","p2","清爽湯頭，吃完不會想睡","越南河粉 竹北"],
+  ["台元園區美食街","in","bento","p2","園區內就有，走路就到，下雨天救星","台元科技園區 美食街","buffet"],
+  ["竹北市場粄條小吃","ty","tw","p1","竹北老市場的客家粄條，便宜又快","竹北市場 粄條","ricenoodle"],
+  ["竹北市場海鮮麵","ty","noodle","p1","市場裡的銅板海鮮麵，選擇超多","竹北市場海鮮麵","noodle"],
+  ["原橋下水餃","ty","noodle","p1","竹北人從小吃到大的老字號水餃","原橋下水餃 竹北","dumpling"],
+  ["小飛俠手工麵線糊總舖","ty","tw","p1","配料滿滿的麵線糊，只開到中午","小飛俠手工麵線糊 竹北","misua"],
+  ["博愛街臭豆腐","ty","tw","p1","外酥內嫩臭豆腐＋魯肉飯、青醬乾麵","博愛街臭豆腐 竹北","stinkytofu"],
+  ["懷念夜市臭豆腐小吃","ty","tw","p1","麵飯均一價超佛心，月底救星","懷念夜市臭豆腐 竹北","stinkytofu"],
+  ["竹豐麻油雞","ty","tw","p2","冷天來一碗麻油雞，暖呼呼","竹豐麻油雞 竹北","soup"],
+  ["日日香便當","ty","bento","p1","在地平價便當，內用白飯湯品免費","日日香便當 竹北","bento"],
+  ["粥大福 竹北博愛店","ty","tw","p1","熱粥配小自助吧，胃不舒服首選","粥大福 竹北博愛","congee"],
+  ["溫家水餃","ty","noodle","p1","超夯水餃，沒時間等的人慎入","溫家水餃 竹北","dumpling"],
+  ["有飯吃 健康餐盒","ty","healthy","p1","大份量健康便當，菜色天天換","有飯吃健康餐盒 竹北","bento"],
+  ["貝穀 南洋雞飯 博愛店","ty","sea","p2","海南雞飯，清爽不油膩","貝穀 南洋雞飯 竹北","hainan"],
+  ["505 Thai 泰式定食","ty","sea","p2","一個人也能吃的泰式定食","505 Thai 泰式定食 竹北","thai"],
+  ["三代目牛肉麵","ty","noodle","p3","舊城區人氣牛肉麵，湯頭濃郁","三代目牛肉麵 竹北","beefnoodle"],
+  ["台南鱔魚麵","ty","noodle","p2","甜甜酸酸的台南味鱔魚意麵","台南鱔魚麵 竹北 勝利二路","noodle"],
+  ["十一街麵食館","ty","noodle","p1","現包水餃，四種口味","十一街麵食館 竹北","dumpling"],
+  ["中大水餃鍋貼館","ty","noodle","p1","鍋貼水餃快速解決一餐","中大水餃鍋貼館 竹北","potsticker"],
+  ["妙觀音素食 竹北勝利店","ty","healthy","p1","自助素食，想吃清淡時","妙觀音素食 竹北勝利","veg"],
+  ["禾迎蔥燒包","ty","tw","p1","竹北市場的蔥燒包，邊走邊吃","禾迎蔥燒包 竹北","bun"],
+  ["八方雲集","ty","noodle","p1","鍋貼＋酸辣湯，永遠不會錯","八方雲集 竹北","potsticker"],
+  ["麥當勞","ty","fast","p2","趕時間、開會前的安全牌","麥當勞 竹北","burger"],
+  ["竹北站前自助餐","ty","bento","p1","夾自己想吃的，營養均衡一點","竹北火車站 自助餐","buffet"],
+  ["越南河粉","ty","sea","p2","清爽湯頭，吃完不會想睡","越南河粉 竹北","pho"],
   // ── 縣治・光明商圈 ──
-  ["黑皮驊魯肉飯","gm","tw","p1","入口即化的魯肉飯，中午常排隊","黑皮驊魯肉飯 竹北 嘉興路"],
-  ["頂廂園 正北方麵食","gm","noodle","p2","牛肉麵、一窩絲，內用豆漿豆花免費","頂廂園 正北方麵食 竹北"],
-  ["老郭專業米腸包香腸","gm","tw","p1","大腸包小腸，快速又飽","老郭 米腸包香腸 竹北"],
-  ["廟口鴨香飯 竹北店","gm","tw","p2","鴨香飯配湯，簡單滿足","廟口鴨香飯 竹北"],
-  ["元氣燉品屋","gm","tw","p1","燉湯配飯，補一下元氣","元氣燉品屋 竹北"],
-  ["家禾手作麵食館","gm","noodle","p2","手作麵條＋牛肉麵","家禾手作麵食館 竹北"],
-  ["文化城牛肉麵","gm","noodle","p2","古早味紅燒牛肉麵","文化城牛肉麵 竹北"],
-  ["珍味鱸魚湯 光明店","gm","tw","p1","鱸魚湯配飯，清爽養生","珍味鱸魚湯 光明店"],
-  ["初原麵場 竹北光明店","gm","noodle","p2","乾麵湯麵都有的麵場","初原麵場 竹北光明"],
-  ["松新竹鴨肉麵","gm","tw","p1","縣府旁的鴨肉麵","松新竹鴨肉麵 竹北"],
-  ["曾家乾麵","gm","noodle","p1","肉燥超香的乾麵，意麵推薦","曾家乾麵 竹北"],
-  ["友家便當屋","gm","bento","p1","獅子頭便當入口即化","友家便當屋 竹北"],
-  ["飛龍排骨大王 竹北店","gm","bento","p1","炸排骨便當經典款","飛龍排骨大王 竹北"],
-  ["川島家便當專賣 竹北店","gm","bento","p2","日式風味便當","川島家便當 竹北"],
-  ["金山雞腿飯","gm","bento","p2","大雞腿便當，吃很飽","金山雞腿飯 竹北"],
-  ["揚新麵食館","gm","noodle","p1","骨仔肉飯、炒板條，用餐時間很多人","揚新麵食館 竹北"],
-  ["小舍河粉","gm","sea","p2","豬肉片河粉，台元人口袋名單","小舍河粉 竹北"],
-  ["弗薇越式","gm","sea","p2","烤肉飯、牛肉河粉","弗薇越式 竹北"],
-  ["健人餐廚","gm","healthy","p3","健康餐盒，清淡但有味道","健人餐廚 竹北"],
-  ["本冬餐盒","gm","healthy","p2","比便當清爽一點的餐盒","本冬餐盒 竹北"],
-  ["豬一十五","gm","noodle","p1","平價麵館，皮蛋拌麵很可以","豬一十五 竹北"],
-  ["韓式拌飯・豆腐鍋","gm","kr","p3","冷天來一鍋辣豆腐，暖到心裡","韓式料理 竹北 光明"],
-  ["吉野家","gm","jp","p2","牛丼快速吃飽，回去還能午睡","吉野家 竹北"],
-  ["燒肉マルディブ 馬爾地夫","gm","hotpot","p5","光明一路的燒肉，犒賞自己用","燒肉 馬爾地夫 竹北 光明一路"],
-  ["享廚鐵板燒","gm","hotpot","p5","慶祝或請客的高級午餐","享廚鐵板燒 竹北"],
+  ["黑皮驊魯肉飯","gm","tw","p1","入口即化的魯肉飯，中午常排隊","黑皮驊魯肉飯 竹北 嘉興路","braisedrice"],
+  ["頂廂園 正北方麵食","gm","noodle","p2","牛肉麵、一窩絲，內用豆漿豆花免費","頂廂園 正北方麵食 竹北","beefnoodle"],
+  ["老郭專業米腸包香腸","gm","tw","p1","大腸包小腸，快速又飽","老郭 米腸包香腸 竹北","sausage"],
+  ["廟口鴨香飯 竹北店","gm","tw","p2","鴨香飯配湯，簡單滿足","廟口鴨香飯 竹北","duckrice"],
+  ["元氣燉品屋","gm","tw","p1","燉湯配飯，補一下元氣","元氣燉品屋 竹北","soup"],
+  ["家禾手作麵食館","gm","noodle","p2","手作麵條＋牛肉麵","家禾手作麵食館 竹北","beefnoodle"],
+  ["文化城牛肉麵","gm","noodle","p2","古早味紅燒牛肉麵","文化城牛肉麵 竹北","beefnoodle"],
+  ["珍味鱸魚湯 光明店","gm","tw","p1","鱸魚湯配飯，清爽養生","珍味鱸魚湯 光明店","fish"],
+  ["初原麵場 竹北光明店","gm","noodle","p2","乾麵湯麵都有的麵場","初原麵場 竹北光明","noodle"],
+  ["松新竹鴨肉麵","gm","tw","p1","縣府旁的鴨肉麵","松新竹鴨肉麵 竹北","duckrice"],
+  ["曾家乾麵","gm","noodle","p1","肉燥超香的乾麵，意麵推薦","曾家乾麵 竹北","noodle"],
+  ["友家便當屋","gm","bento","p1","獅子頭便當入口即化","友家便當屋 竹北","bento"],
+  ["飛龍排骨大王 竹北店","gm","bento","p1","炸排骨便當經典款","飛龍排骨大王 竹北","porkchop"],
+  ["川島家便當專賣 竹北店","gm","bento","p2","日式風味便當","川島家便當 竹北","bento"],
+  ["金山雞腿飯","gm","bento","p2","大雞腿便當，吃很飽","金山雞腿飯 竹北","drumstick"],
+  ["揚新麵食館","gm","noodle","p1","骨仔肉飯、炒板條，用餐時間很多人","揚新麵食館 竹北","noodle"],
+  ["小舍河粉","gm","sea","p2","豬肉片河粉，台元人口袋名單","小舍河粉 竹北","pho"],
+  ["弗薇越式","gm","sea","p2","烤肉飯、牛肉河粉","弗薇越式 竹北","pho"],
+  ["健人餐廚","gm","healthy","p3","健康餐盒，清淡但有味道","健人餐廚 竹北","salad"],
+  ["本冬餐盒","gm","healthy","p2","比便當清爽一點的餐盒","本冬餐盒 竹北","bento"],
+  ["豬一十五","gm","noodle","p1","平價麵館，皮蛋拌麵很可以","豬一十五 竹北","noodle"],
+  ["韓式拌飯・豆腐鍋","gm","kr","p3","冷天來一鍋辣豆腐，暖到心裡","韓式料理 竹北 光明","korean"],
+  ["吉野家","gm","jp","p2","牛丼快速吃飽，回去還能午睡","吉野家 竹北","donburi"],
+  ["燒肉マルディブ 馬爾地夫","gm","hotpot","p5","光明一路的燒肉，犒賞自己用","燒肉 馬爾地夫 竹北 光明一路","yakiniku"],
+  ["享廚鐵板燒","gm","hotpot","p5","慶祝或請客的高級午餐","享廚鐵板燒 竹北","teppan"],
   // ── 竹北遠百一帶 ──
-  ["非晉餐廚 竹北遠百店","fe","healthy","p3","舒肥健康餐盒，口味多","非晉餐廚 竹北遠百"],
-  ["鷹流東京醬油拉麵 蘭丸","fe","jp","p3","叉燒巨量的醬油拉麵","鷹流東京醬油拉麵 蘭丸 竹北"],
-  ["食在燒","fe","hotpot","p2","百元燒肉入門，滷肉飯吃到飽","食在燒 竹北"],
-  ["饗泰多 竹北遠百","fe","sea","p4","招牌月亮蝦餅超厚，適合同事一起","饗泰多 竹北遠百"],
-  ["The Diner 樂子 竹北遠百","fe","west","p4","美式早午餐、漢堡、班尼迪克蛋","The Diner 竹北遠百"],
-  ["旭集 竹北遠百","fe","jp","p5","和食吃到飽，慶生或發獎金時","旭集 竹北遠百"],
-  ["遠百美食街","fe","fast","p3","選擇多，大家意見不同時就來這","竹北遠百 美食街"],
+  ["非晉餐廚 竹北遠百店","fe","healthy","p3","舒肥健康餐盒，口味多","非晉餐廚 竹北遠百","salad"],
+  ["鷹流東京醬油拉麵 蘭丸","fe","jp","p3","叉燒巨量的醬油拉麵","鷹流東京醬油拉麵 蘭丸 竹北","ramen"],
+  ["食在燒","fe","hotpot","p2","百元燒肉入門，滷肉飯吃到飽","食在燒 竹北","yakiniku"],
+  ["饗泰多 竹北遠百","fe","sea","p4","招牌月亮蝦餅超厚，適合同事一起","饗泰多 竹北遠百","thai"],
+  ["The Diner 樂子 竹北遠百","fe","west","p4","美式早午餐、漢堡、班尼迪克蛋","The Diner 竹北遠百","brunch"],
+  ["旭集 竹北遠百","fe","jp","p5","和食吃到飽，慶生或發獎金時","旭集 竹北遠百","sushi"],
+  ["遠百美食街","fe","fast","p3","選擇多，大家意見不同時就來這","竹北遠百 美食街","buffet"],
   // ── 自強・文興商圈 ──
-  ["竹東邱記排骨酥麵","zq","noodle","p1","排骨酥麵＋蝦仁肉圓","邱記排骨酥麵 竹北"],
-  ["蘭英拌麵所","zq","noodle","p2","人氣拌麵，乾麵控可以試試","蘭英拌麵所 竹北"],
-  ["泰飽爺","zq","sea","p2","花少少錢吃泰式","泰飽爺 竹北"],
-  ["musha musha 熟成咖哩","zq","jp","p3","濃郁熟成咖哩飯","musha musha 咖哩 竹北"],
-  ["拉麵","zq","jp","p3","今天想吃一碗濃郁豚骨","拉麵 竹北 自強"],
-  ["義大利麵","zq","west","p3","奶油、青醬、紅醬任你選","義大利麵 竹北 文興"],
-  ["朝一燒肉","zq","hotpot","p5","竹北人氣燒肉，平日午間可單人","朝一燒肉 竹北"],
+  ["竹東邱記排骨酥麵","zq","noodle","p1","排骨酥麵＋蝦仁肉圓","邱記排骨酥麵 竹北","noodle"],
+  ["蘭英拌麵所","zq","noodle","p2","人氣拌麵，乾麵控可以試試","蘭英拌麵所 竹北","noodle"],
+  ["泰飽爺","zq","sea","p2","花少少錢吃泰式","泰飽爺 竹北","thai"],
+  ["musha musha 熟成咖哩","zq","jp","p3","濃郁熟成咖哩飯","musha musha 咖哩 竹北","curry"],
+  ["拉麵","zq","jp","p3","今天想吃一碗濃郁豚骨","拉麵 竹北 自強","ramen"],
+  ["義大利麵","zq","west","p3","奶油、青醬、紅醬任你選","義大利麵 竹北 文興","pasta"],
+  ["朝一燒肉","zq","hotpot","p5","竹北人氣燒肉，平日午間可單人","朝一燒肉 竹北","yakiniku"],
   // ── 高鐵特區・六家 ──
-  ["厝米 東門米粉攤","hsr","tw","p1","豪華配料米粉湯","厝米 東門米粉攤 竹北"],
-  ["牧牛 日式蓋飯","hsr","jp","p2","唐揚雞丼多汁","牧牛 蓋飯 竹北"],
-  ["元爵味 黃燜雞米飯","hsr","cn","p2","黃燜雞配飯，很下飯","元爵味 黃燜雞米飯 竹北"],
-  ["一米食便當","hsr","bento","p1","不到百元有肉有菜","一米食便當 竹北"],
-  ["木木食堂","hsr","sea","p2","打拋飯、胡椒豬肚雞湯","木木食堂 竹北"],
-  ["九湯屋日本拉麵 六家店","hsr","jp","p3","日式拉麵","九湯屋 竹北六家"],
-  ["美生餐室 竹北店","hsr","cn","p3","港式茶餐廳，焗飯菠蘿油","美生餐室 竹北"],
-  ["段純貞牛肉麵 竹北店","hsr","noodle","p4","連鎖牛肉麵，湯頭穩","段純貞牛肉麵 竹北"],
-  ["浩克廚房","hsr","healthy","p2","原型食物餐盒，價格很佛","浩克廚房 竹北"],
-  ["涮乃葉","hsr","hotpot","p4","日式涮涮鍋吃到飽","涮乃葉 竹北"],
-  ["高鐵特區 餐酒館","hsr","west","p4","有氛圍的午間套餐","餐酒館 竹北 高鐵"],
-  ["老井極上燒肉 竹北","hsr","hotpot","p5","超難訂的燒肉，要提早預約","老井極上燒肉 竹北"],
-  ["孫太太私料慢火鍋 竹北","hsr","hotpot","p5","高檔火鍋，部門聚餐等級","孫太太 慢火鍋 竹北"],
-  ["新竹喜來登 自助餐","hsr","west","p5","飯店 buffet，大日子專用","新竹喜來登大飯店 自助餐"],
+  ["厝米 東門米粉攤","hsr","tw","p1","豪華配料米粉湯","厝米 東門米粉攤 竹北","ricenoodle"],
+  ["牧牛 日式蓋飯","hsr","jp","p2","唐揚雞丼多汁","牧牛 蓋飯 竹北","donburi"],
+  ["元爵味 黃燜雞米飯","hsr","cn","p2","黃燜雞配飯，很下飯","元爵味 黃燜雞米飯 竹北","chickenrice"],
+  ["一米食便當","hsr","bento","p1","不到百元有肉有菜","一米食便當 竹北","bento"],
+  ["木木食堂","hsr","sea","p2","打拋飯、胡椒豬肚雞湯","木木食堂 竹北","thai"],
+  ["九湯屋日本拉麵 六家店","hsr","jp","p3","日式拉麵","九湯屋 竹北六家","ramen"],
+  ["美生餐室 竹北店","hsr","cn","p3","港式茶餐廳，焗飯菠蘿油","美生餐室 竹北","hkcafe"],
+  ["段純貞牛肉麵 竹北店","hsr","noodle","p4","連鎖牛肉麵，湯頭穩","段純貞牛肉麵 竹北","beefnoodle"],
+  ["浩克廚房","hsr","healthy","p2","原型食物餐盒，價格很佛","浩克廚房 竹北","salad"],
+  ["涮乃葉","hsr","hotpot","p4","日式涮涮鍋吃到飽","涮乃葉 竹北","hotpot"],
+  ["高鐵特區 餐酒館","hsr","west","p4","有氛圍的午間套餐","餐酒館 竹北 高鐵","steak"],
+  ["老井極上燒肉 竹北","hsr","hotpot","p5","超難訂的燒肉，要提早預約","老井極上燒肉 竹北","yakiniku"],
+  ["孫太太私料慢火鍋 竹北","hsr","hotpot","p5","高檔火鍋，部門聚餐等級","孫太太 慢火鍋 竹北","hotpot"],
+  ["新竹喜來登 自助餐","hsr","west","p5","飯店 buffet，大日子專用","新竹喜來登大飯店 自助餐","buffet"],
   // ── 新竹舊城 ──
-  ["城隍廟小吃","old","tw","p1","米粉＋貢丸湯，新竹靈魂","新竹城隍廟 小吃"],
-  ["鴨肉許","old","tw","p1","新竹老字號鴨肉飯、鴨肉麵","鴨肉許 新竹"],
+  ["城隍廟小吃","old","tw","p1","米粉＋貢丸湯，新竹靈魂","新竹城隍廟 小吃","ricenoodle"],
+  ["鴨肉許","old","tw","p1","新竹老字號鴨肉飯、鴨肉麵","鴨肉許 新竹","duckrice"],
   // ── 竹科關新・金山街 ──
-  ["好市多 新竹店 美食區","gx","fast","p1","熱狗堡＋飲料，最省的一餐","好市多 新竹店"],
-  ["珍豐大骨手工湯包","gx","cn","p2","關東橋的湯包，皮薄湯多","珍豐大骨手工湯包"],
-  ["瓦城 關新店","gx","sea","p4","打拋豬、蝦醬高麗菜，聚餐穩","瓦城 關新店"],
-  ["竹美私房料理 關新店","gx","cn","p4","港式點心＋中菜，適合多人","竹美私房料理 關新店"],
-  ["今日魚市日本料理 關新店","gx","jp","p4","生魚片丼、定食，CP 值高","今日魚市日本料理 關新"],
-  ["Garden Party","gx","west","p4","金山六街森林系餐廳，好拍","Garden Party 金山六街"],
+  ["好市多 新竹店 美食區","gx","fast","p1","熱狗堡＋飲料，最省的一餐","好市多 新竹店","sausage"],
+  ["珍豐大骨手工湯包","gx","cn","p2","關東橋的湯包，皮薄湯多","珍豐大骨手工湯包","xlb"],
+  ["瓦城 關新店","gx","sea","p4","打拋豬、蝦醬高麗菜，聚餐穩","瓦城 關新店","thai"],
+  ["竹美私房料理 關新店","gx","cn","p4","港式點心＋中菜，適合多人","竹美私房料理 關新店","xlb"],
+  ["今日魚市日本料理 關新店","gx","jp","p4","生魚片丼、定食，CP 值高","今日魚市日本料理 關新","sushi"],
+  ["Garden Party","gx","west","p4","金山六街森林系餐廳，好拍","Garden Party 金山六街","pasta"],
   // ── 新竹東區・巨城 ──
-  ["爭鮮迴轉壽司","east","jp","p3","一盤一盤拿，想吃多少算多少","爭鮮 新竹"],
-  ["石二鍋","east","hotpot","p3","一個人也能吃的小火鍋","石二鍋 新竹"],
-  ["鼎泰豐 新竹巨城","east","cn","p4","小籠包永遠的經典，要等位","鼎泰豐 新竹巨城"],
-  ["大戶屋","east","jp","p4","日式定食，菜色均衡","大戶屋 新竹"],
-  ["隆恩餐館","east","cn","p4","三民路客家創意菜，牛小排必點","隆恩餐館 新竹"],
+  ["爭鮮迴轉壽司","east","jp","p3","一盤一盤拿，想吃多少算多少","爭鮮 新竹","sushi"],
+  ["石二鍋","east","hotpot","p3","一個人也能吃的小火鍋","石二鍋 新竹","hotpot"],
+  ["鼎泰豐 新竹巨城","east","cn","p4","小籠包永遠的經典，要等位","鼎泰豐 新竹巨城","xlb"],
+  ["大戶屋","east","jp","p4","日式定食，菜色均衡","大戶屋 新竹","tonkatsu"],
+  ["隆恩餐館","east","cn","p4","三民路客家創意菜，牛小排必點","隆恩餐館 新竹","steak"],
+  // ── 竹北新增（v1.1）──
+  ["牛鼎軒經典傳承牛肉麵","zq","noodle","p2","大塊牛肉、湯頭濃郁的牛肉麵","牛鼎軒經典傳承牛肉麵 竹北","beefnoodle"],
+  ["雲泰豐","zq","sea","p2","雲南泰式料理，酸辣開胃","雲泰豐 竹北","thai"],
+  ["麵家二眷 竹北店","zbx","noodle","p3","眷村風味麵食，紅燒牛肉麵","麵家二眷 竹北","beefnoodle"],
+  ["一浪拉麵","hsr","jp","p2","170 元起的日式拉麵","一浪拉麵 竹北","ramen"],
+  ["和平飯店","gm","cn","p4","光明一路的中式合菜，適合多人","和平飯店 竹北 光明一路","roastduck"],
+  ["知豬人豬料理專賣店","gm","jp","p3","厚切豬排定食，外酥內嫩","知豬人 豬料理 竹北","tonkatsu"],
+  ["廣東廣東港式小吃","fe","cn","p2","燒臘飯、港式小點","廣東廣東港式小吃 竹北","hk"],
+  ["合成意麵","gm","noodle","p1","銅板價的古早味意麵","合成意麵 竹北","noodle"],
+  ["牛範生台式蒜香牛排","zbx","west","p3","蒜香台式牛排，鐵板滋滋響","牛範生台式蒜香牛排 竹北","steak"],
+  ["小時厚牛排 竹北自強店","zq","west","p3","平價牛排，濃湯飲料吧","小時厚牛排 竹北自強","steak"],
+  ["宅米 丼飯咖哩定食","hsr","jp","p3","丼飯和咖哩定食二選一","宅米 丼飯咖哩定食 竹北","donburi"],
+  ["百宸糧倉","fe","cn","p1","炒飯炒麵，快又飽","百宸糧倉 竹北","friedrice"],
+  ["Bee's Knees 彼斯尼","hsr","curry","p2","高鐵二路的咖哩小店","Bee's Knees 彼斯尼 竹北","curry"],
+  ["川牛木石亭 竹北博愛店","ty","jp","p2","日式丼飯、牛肉蓋飯","川牛木石亭 竹北博愛","donburi"],
+  ["泰速泰式料理 竹北光明店","gm","sea","p2","打拋豬、綠咖哩，快速出餐","泰速泰式料理 竹北光明","thai"],
+  ["鼎鴨鴨肉飯 竹北總店","ty","tw","p1","鴨肉飯配下水湯，經典組合","鼎鴨鴨肉飯 竹北","duckrice"],
+  ["Mr.Kenny 肯尼廚房","fe","fast","p3","美式漢堡、炸物，份量大","肯尼廚房 竹北","burger"],
+  ["Mr.Moon 月亮先生咖啡館","hsr","west","p4","氣氛好的早午餐咖啡館","月亮先生咖啡館 竹北","brunch"],
+  ["DS醫院主題餐廳","gm","west","p4","醫院主題的特色餐廳，好拍","DS醫院主題餐廳 竹北","pasta"],
+  ["靚牛排","gm","west","p3","文義街的平價牛排","靚牛排 竹北","steak"],
+  ["竹北黑Black","hsr","tw","p1","銅板小吃，肉燥飯配湯","竹北黑Black","braisedrice"],
+  ["老灣子 重慶麵食","zbx","noodle","p2","麻辣重慶小麵，香辣過癮","老灣子 重慶麵食 竹北","noodle"],
+  ["珍味鱸魚湯 福興店","ty","tw","p1","鱸魚湯配飯，清爽不膩","珍味鱸魚湯 福興店","fish"],
+  ["蕭邦 羊肉泡饃","zbx","cn","p2","西北風味羊肉泡饃","蕭邦 羊肉泡饃 竹北","lamb"],
+  ["田園燉品屋","zbx","tw","p1","燉湯配飯，暖胃一餐","田園燉品屋 竹北","soup"],
+  ["雙月食品社 竹北店","zbx","tw","p3","雞湯、燉飯，網紅老店","雙月食品社 竹北","soup"],
+  ["超愛吃湯包","zbx","cn","p2","皮薄多汁的湯包","超愛吃湯包 竹北","xlb"],
+  ["姥夥房 竹北鹿場店","zbx","cn","p3","東北菜，酸菜白肉鍋","姥夥房 竹北","hotpot"],
+  ["漢神legacy鉄板焼き","zbx","hotpot","p3","平價鐵板燒，現點現煎","漢神legacy鉄板焼き 竹北","teppan"],
+  ["上菜片皮鴨","zbx","cn","p4","烤鴨三吃，適合聚餐","上菜片皮鴨 竹北","roastduck"],
+  ["巴適經典麻辣鍋","zbx","hotpot","p5","重口味麻辣鍋，聚餐首選","巴適經典麻辣鍋 竹北","hotpot"],
+  ["蜀味古巷串香火鍋","zbx","hotpot","p4","串串香火鍋，邊涮邊聊","蜀味古巷串香火鍋 竹北","hotpot"],
+  ["柴堡 Shiba Burger","ty","fast","p2","柴犬主題的手作漢堡","柴堡 Shiba Burger 竹北","burger"],
+  ["歐浮找餐 博愛店","ty","west","p2","平價早午餐、義大利麵","歐浮找餐 竹北博愛","brunch"],
+  ["Kurashi 暮らし","zbx","tw","p2","溫暖日系風的定食小店","Kurashi 暮らし 竹北","bento"],
+  ["松島食堂","zbx","kr","p3","韓式定食、石鍋拌飯","松島食堂 竹北","korean"],
+  ["大醬韓式料理","hsr","kr","p3","大醬湯、韓式炸雞","大醬韓式料理 竹北","korean"],
+  ["有籽義麵 竹北文信店","gm","west","p3","手作義大利麵","有籽義麵 竹北","pasta"],
+  ["Next Stop+ 香港手作料理","gm","cn","p3","港式茶餐廳，菠蘿油、焗飯","Next Stop 香港手作料理 竹北","hkcafe"],
+  ["同樂食鍋","zq","hotpot","p4","自強南路的個人鍋","同樂食鍋 竹北","hotpot"],
+  ["李鐵柱火鍋村","zbx","hotpot","p5","大份量火鍋，聚餐用","李鐵柱火鍋村 竹北","hotpot"],
+  ["耀武羊威","zbx","hotpot","p5","羊肉爐專賣，冬天限定好選擇","耀武羊威 竹北","lamb"],
+  ["善菓堂","fe","healthy","p4","米其林必比登推薦的蔬食","善菓堂 竹北","veg"],
+  ["果然匯 竹北遠百","fe","healthy","p5","蔬食吃到飽，素食同事也開心","果然匯 竹北遠百","buffet"],
+  ["馬友友印度廚房","gm","curry","p4","道地印度咖哩配烤餅","馬友友印度廚房 竹北","curry"],
+  ["HOLI 活力印度餐廳 竹北成功店","hsr","curry","p4","印度咖哩、坦都里烤雞","HOLI 印度餐廳 竹北","curry"],
+  ["鹿咖哩","fe","curry","p3","日式咖哩飯，炸豬排加購","鹿咖哩 竹北","curry"],
+  ["老拳棒棒麵食館","hsr","noodle","p2","手工麵條，牛肉麵、炸醬麵","老拳棒棒麵食館 竹北","beefnoodle"],
+  ["FRI DINER 福萊食宅","hsr","west","p3","美式早午餐、漢堡","FRI DINER 福萊食宅 竹北","brunch"],
+  ["Gear Box營養工事 竹北所","fe","healthy","p3","高蛋白健康餐盒","Gear Box營養工事 竹北","salad"],
+  ["鐵了心暖心鍋室 竹北中正東店","ty","hotpot","p3","一人一鍋，冷天暖胃","鐵了心暖心鍋室 竹北","hotpot"],
+  ["漢來上海湯包 竹北店","fe","cn","p3","遠百 B2 的湯包、點心","漢來上海湯包 竹北","xlb"],
+  ["鼎豐園小籠包","zbx","cn","p2","平價小籠包、蒸餃","鼎豐園小籠包 竹北","xlb"],
+  ["金福越式河粉 竹北勝利店","fe","sea","p2","牛肉河粉、越式法國麵包","金福越式河粉 竹北","pho"],
+  ["越南河內河粉","ty","sea","p2","勝利二路的北越河粉","越南河內河粉 竹北","pho"],
+  ["美利河 Merry Pho","zbx","sea","p3","有質感的越式河粉","美利河 Merry Pho 竹北","pho"],
+  ["東家麵食館","hsr","noodle","p1","平價麵食、水餃","東家麵食館 竹北","dumpling"],
+  ["史坦利美式牛排","zbx","west","p3","美式牛排，沙拉吧吃飽飽","史坦利美式牛排 竹北","steak"],
+  ["肯德基","gm","fast","p2","炸雞蛋撻，嘴饞時","肯德基 竹北","friedchicken"],
+  ["藏壽司","zbx","jp","p3","迴轉壽司扭蛋，吃完還能抽","藏壽司 竹北","sushi"],
+  ["鬍鬚張 竹北自強","zq","tw","p2","魯肉飯連鎖，穩定不出錯","鬍鬚張 竹北","braisedrice"],
 ];
 
 /* ===== 狀態 ===== */
@@ -651,20 +811,23 @@ if(store.get("lunch_v",0)<3){ // v0.2 → v0.3 價位表從 4 段改 5 段
   const f=store.get("lunch_filter",null); if(f&&f.prices){f.prices=f.prices.map(k=>mp[k]||k);store.set("lunch_filter",f);}
   store.set("lunch_hist",[]); store.set("lunch_v",4);
 }
+if(store.get("lunch_v",0)<5){ // v1.1：預設只搜竹北（新竹要到「條件」打開）
+  const f=store.get("lunch_filter",null); if(f){f.region="zb";store.set("lunch_filter",f);} store.set("lunch_v",5);
+}
 let history = store.get("lunch_hist",[]);
 let mode = "random";
-const F = Object.assign({region:"all",time:25,prices:[],cuisines:[],avoid:true}, store.get("lunch_filter",{}));
+const F = Object.assign({region:"zb",time:25,prices:[],cuisines:[],avoid:true}, store.get("lunch_filter",{}));
 
 function allRestaurants(){
-  return BASE.map(r=>({id:"b:"+r[0],name:r[0],area:r[1],cui:r[2],price:r[3],note:r[4],q:r[5]})).concat(custom);
+  return BASE.map(r=>({id:"b:"+r[0],name:r[0],area:r[1],cui:r[2],price:r[3],note:r[4],q:r[5],dish:r[6]})).concat(custom);
 }
-/* 隨機模式：只套用「價位快速選單」；條件模式：全部條件 */
+/* 隨機模式：套用「區域」＋「價位快速選單」；條件模式：全部條件
+   區域預設竹北，新竹要到「條件」選新竹或全部才會加入 */
 function candidates(){
-  let list = allRestaurants().filter(r=>!F.prices.length || F.prices.includes(r.price));
+  let list = allRestaurants().filter(r=>(!F.prices.length || F.prices.includes(r.price)) && (F.region==="all" || AREAS[r.area].region===F.region));
   if(mode==="filter"){
     list = list.filter(r=>{
       const a=AREAS[r.area];
-      if(F.region!=="all" && a.region!==F.region) return false;
       if(a.min > F.time) return false;
       if(F.cuisines.length && !F.cuisines.includes(r.cui)) return false;
       return true;
@@ -681,8 +844,8 @@ function candidates(){
 const $ = s=>document.querySelector(s);
 function chip(g,k,label,on,color,icon=""){return `<button class="chip ${on?"on":""}" data-g="${g}" data-k="${k}" ${color?`data-c="${color}"`:""}>${icon}${label}</button>`;}
 function renderFilters(){
-  $("#fRegion").innerHTML = chip("region","all","全部",F.region==="all","sky")
-    + Object.entries(REGIONS).map(([k,v])=>chip("region",k,v,F.region===k,"sky")).join("");
+  $("#fRegion").innerHTML = Object.entries(REGIONS).map(([k,v])=>chip("region",k,v,F.region===k,"sky")).join("")
+    + chip("region","all","全部",F.region==="all","sky");
   $("#fTime").innerHTML = [5,10,15,25].map(m=>chip("time",m,m===25?"都可以":m+" 分內",F.time===m,"mint",ui(m<=5?"walk":"car",18))).join("");
   $("#fPrice").innerHTML = Object.entries(PRICES).map(([k,v])=>chip("price",k,v.q,F.prices.includes(k),"peach")).join("");
   $("#fCuisine").innerHTML = Object.entries(CUISINES).map(([k,v])=>chip("cui",k,v.name,F.cuisines.includes(k),"",foodSVG(k,22))).join("");
@@ -705,7 +868,7 @@ function meta(r){const a=AREAS[r.area];return `${a.name}・${a.min}分・TWD ${P
 function renderList(){
   const list=candidates();
   $("#listTitle").innerHTML = ui("shop",20)+(mode==="filter"?"符合條件 ":"扭蛋機裡的店 ")+list.length+" 間";
-  $("#list").innerHTML = list.length ? list.map(r=>`<div class="item"><div class="i-emo" style="background:${CUISINES[r.cui].bg}">${foodSVG(r.cui,36)}</div>
+  $("#list").innerHTML = list.length ? list.map(r=>`<div class="item"><div class="i-emo" style="background:${CUISINES[r.cui].bg}">${restIcon(r,36)}</div>
       <div class="i-main"><div class="i-name">${esc(r.name)}${r.custom?ui("star",14):""}</div><div class="i-meta">${meta(r)}</div></div>
       <button class="i-btn" data-pick="${r.id}">選這間</button></div>`).join("")
     : `<div class="empty">沒有符合的店家<br>放寬一點條件試試看？</div>`;
@@ -715,7 +878,7 @@ function renderHist(){
   $("#histList").innerHTML = history.length ? history.slice(0,10).map(h=>{
     const r=all.find(x=>x.id===h.id); if(!r) return "";
     const d=new Date(h.t);
-    return `<div class="item"><div class="i-emo" style="background:${CUISINES[r.cui].bg}">${foodSVG(r.cui,36)}</div>
+    return `<div class="item"><div class="i-emo" style="background:${CUISINES[r.cui].bg}">${restIcon(r,36)}</div>
       <div class="i-main"><div class="i-name">${esc(r.name)}</div><div class="i-meta">${d.getMonth()+1}/${d.getDate()}（${"日一二三四五六"[d.getDay()]}）・TWD ${PRICES[r.price].name}</div></div></div>`;
   }).join("") : `<div class="empty">還沒有紀錄<br>按「就吃這間！」就會記下來</div>`;
 }
@@ -1043,8 +1206,9 @@ $("#sfxBtn").onclick=()=>{const v=!Snd.sfxOn; if(!v) Snd.play("toggle",false); S
 
 
 /* ===== 版本 & 改版紀錄 ===== */
-const APP_VERSION = "1.0.0";
+const APP_VERSION = "1.1.0";
 const CHANGELOG = [
+  ["1.1.0","11/04","竹北餐廳大擴充！",["新增 61 間竹北餐廳，總共 151 間","每間店都有自己的專屬可愛圖示","新增「咖哩」分類","預設只抽竹北，想吃新竹到「條件」打開"]],
   ["1.0.0","11/03","正式上線！",["台元午餐轉轉 v1.0.0 正式上線，謝謝大家一起試用","最下方加上版權標示","飯糰君對話泡泡的小三角形稍微分開"]],
   ["0.9.1","11/03","飯糰君冷知識",["講完八卦後多戳幾下，飯糰君會問你冷知識","八卦講過了，再生氣也不會重講"]],
   ["0.9","11/03","開機動畫",["全新開機畫面：扭蛋機彈出、扭蛋一顆顆冒出、把手轉一圈，最後飛進首頁","更新說明改在畫面正中央，等開機畫面結束才出現","減少背景運算，讓桌面 App 的音樂更順"]],
@@ -1243,7 +1407,7 @@ function spin(){
   let n=0; const total=18;
   const tick=()=>{
     const r = n<total-1 ? list[Math.floor(Math.random()*list.length)] : pick;
-    $("#ticker").innerHTML = foodSVG(r.cui,26)+esc(r.name);
+    $("#ticker").innerHTML = restIcon(r,26)+esc(r.name);
     Snd.play("tick",n,total);
     n++;
     if(n<total) setTimeout(tick,45+n*n*1.5);
@@ -1310,7 +1474,7 @@ function miniMap(r){
         <ellipse cx="0" cy="2" rx="10" ry="4" fill="#5A4434" opacity=".18"/>
         <path d="M0 0 Q-17 -20 -17 -32 A17 17 0 0 1 17 -32 Q17 -20 0 0Z" fill="#FFB59E" stroke="${O}" stroke-width="3" stroke-linejoin="round"/>
         <circle cx="0" cy="-32" r="12" fill="#fff" stroke="${O}" stroke-width="2"/>
-        <svg x="-11" y="-43" width="22" height="22" viewBox="0 0 64 64">${FOOD[r.cui]}</svg>
+        <g transform="translate(-11 -43)">${restIcon(r,22)}</g>
         <animateTransform attributeName="transform" type="translate" additive="sum" values="0 0;0 -4;0 0" dur="1.4s" repeatCount="indefinite"/>
       </g>
     </svg>
@@ -1324,7 +1488,7 @@ function showResult(r,col){
   const hints=["今天就決定是你了！","命運的午餐是…","轉到這間！衝啊","肚子說：就這間"];
   $("#result").innerHTML = `
     <div class="reveal" style="--c:${col}">
-      <div class="food">${foodSVG(r.cui,92)}</div>
+      <div class="food">${restIcon(r,92)}</div>
       <div class="half top"></div><div class="half bot"></div>
     </div>
     <div class="r-hint">${hints[Math.floor(Math.random()*hints.length)]}</div>
