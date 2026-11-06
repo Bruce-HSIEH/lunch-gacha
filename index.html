@@ -135,6 +135,10 @@ h1{font-size:20px;white-space:nowrap;margin:0;font-weight:900;letter-spacing:.5p
 .quick{margin:14px 0 14px;text-align:left}
 .qlabel{font-size:13.5px;font-weight:900;margin:0 0 8px 2px;display:flex;align-items:center;gap:5px}
 .qrow{display:grid;grid-template-columns:repeat(5,1fr);gap:5px}
+.qlabel.q2{margin-top:12px}
+.chip[data-c="no"]{flex-direction:column;gap:1px;padding:5px 0 6px;border-radius:16px}
+.chip[data-c="no"] .ic{width:26px;height:26px}
+.chip[data-c="no"].on{background:#FFE1DC;border-color:#F28C7E;color:#C2503F}
 .qrow .chip{padding:8px 0;font-size:12.5px;text-align:center;justify-content:center;letter-spacing:-.2px}
 
 .bigbtn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;border:0;border-radius:20px;padding:15px;font-size:19px;font-weight:900;
@@ -352,6 +356,8 @@ body.enter #machineCard{animation-name:enterFade}
   <div class="quick">
     <div class="qlabel"><span data-ic="coin" data-s="18"></span>今天預算 <span class="small">（TWD／人，可複選，不選＝都可以）</span></div>
     <div class="qrow" id="fPrice"></div>
+    <div class="qlabel q2"><span data-ic="nono" data-s="18"></span>我不吃 <span class="small">（可複選，主打這種肉的店會跳過）</span></div>
+    <div class="qrow" id="fNo"></div>
   </div>
 
   <div class="count" id="count"></div>
@@ -596,6 +602,32 @@ const UI = {
   shop:`<path d="M3 9 L5 4 H19 L21 9Z" fill="#FFB59E" stroke="${O}" stroke-width="2" stroke-linejoin="round"/><rect x="4.5" y="9" width="15" height="11" rx="1.5" fill="#fff" stroke="${O}" stroke-width="2"/><rect x="10" y="13" width="4" height="7" fill="#FFE08A" stroke="${O}" stroke-width="1.4"/>`,
 };
 function ui(k,size=18,white){return `<svg class="ic" width="${size}" height="${size}" viewBox="0 0 24 24" ${white?'style="color:#fff"':'style="color:#5A4434"'}>${UI[k]}</svg>`;}
+/* 「我不吃」小動物頭像；開啟時疊一條紅色斜線 */
+const MEAT = {
+  beef:{name:"牛",svg:`<path d="M5 8 Q2 6 2.5 3.5 Q5 4 6.5 6.5 M19 8 Q22 6 21.5 3.5 Q19 4 17.5 6.5" fill="#FFF3D6" stroke="${O}" stroke-width="1.5" stroke-linejoin="round"/><path d="M4.5 9 Q3 9.5 2.8 11 Q4 11.6 5.6 10.6 M19.5 9 Q21 9.5 21.2 11 Q20 11.6 18.4 10.6" fill="#fff" stroke="${O}" stroke-width="1.4"/><path d="M5.5 11 Q5 5.5 12 5.5 Q19 5.5 18.5 11 Q18.5 13 18 14 H6 Q5.5 13 5.5 11Z" fill="#fff" stroke="${O}" stroke-width="1.5"/><path d="M8 6.2 Q10 6 10.2 8.4 Q8.4 9.4 6.6 8.2" fill="#8C6A55"/><rect x="6" y="13" width="12" height="7" rx="3.5" fill="#FFC2C8" stroke="${O}" stroke-width="1.5"/><circle cx="9.4" cy="16.4" r=".9" fill="${O}"/><circle cx="14.6" cy="16.4" r=".9" fill="${O}"/><circle cx="9" cy="10.5" r="1" fill="${O}"/><circle cx="15" cy="10.5" r="1" fill="${O}"/>`},
+  pork:{name:"豬",svg:`<path d="M5 8 L4.5 3.5 L9 6 M19 8 L19.5 3.5 L15 6" fill="#FFB8C6" stroke="${O}" stroke-width="1.5" stroke-linejoin="round"/><circle cx="12" cy="13" r="8.2" fill="#FFCFD8" stroke="${O}" stroke-width="1.5"/><ellipse cx="12" cy="15" rx="3.8" ry="2.8" fill="#FFA9B8" stroke="${O}" stroke-width="1.4"/><circle cx="10.6" cy="15" r=".8" fill="${O}"/><circle cx="13.4" cy="15" r=".8" fill="${O}"/><circle cx="8.6" cy="10.8" r="1" fill="${O}"/><circle cx="15.4" cy="10.8" r="1" fill="${O}"/>`},
+  chicken:{name:"雞",svg:`<path d="M9 5.5 Q9 2.5 11 3.5 Q12 1.5 13.5 3.5 Q15.5 2.8 15 5.8" fill="#F26B5B" stroke="${O}" stroke-width="1.4" stroke-linejoin="round"/><path d="M5 13 Q5 5.5 12 5.5 Q19 5.5 19 13 Q19 20.5 12 20.5 Q5 20.5 5 13Z" fill="#fff" stroke="${O}" stroke-width="1.5"/><path d="M10 13 L14 13 L12 15.8Z" fill="#FFC23D" stroke="${O}" stroke-width="1.3" stroke-linejoin="round"/><path d="M11.3 15.6 Q11 18 12 18.4 Q13 18 12.7 15.6" fill="#F26B5B"/><circle cx="9.2" cy="10.6" r="1" fill="${O}"/><circle cx="14.8" cy="10.6" r="1" fill="${O}"/><ellipse cx="7.6" cy="13.6" rx="1.3" ry=".8" fill="#FF8F78" opacity=".55"/><ellipse cx="16.4" cy="13.6" rx="1.3" ry=".8" fill="#FF8F78" opacity=".55"/>`},
+  lamb:{name:"羊",svg:`<path d="M4.5 10 Q1.5 10.5 2 13 Q4.5 13 6 11.5 M19.5 10 Q22.5 10.5 22 13 Q19.5 13 18 11.5" fill="#E8D6C2" stroke="${O}" stroke-width="1.4" stroke-linejoin="round"/><path d="M6.5 7.5 Q5 4 8.5 4 Q10 2 12 3.5 Q14 2 15.5 4 Q19 4 17.5 7.5" fill="#FFF8EC" stroke="${O}" stroke-width="1.5" stroke-linejoin="round"/><path d="M6.5 9 Q6.5 6.5 12 6.5 Q17.5 6.5 17.5 9 V15 Q17.5 20.5 12 20.5 Q6.5 20.5 6.5 15Z" fill="#F4E3CF" stroke="${O}" stroke-width="1.5"/><circle cx="9.6" cy="11.6" r="1" fill="${O}"/><circle cx="14.4" cy="11.6" r="1" fill="${O}"/><path d="M10.6 16 Q12 17.4 13.4 16" stroke="${O}" stroke-width="1.3" fill="none" stroke-linecap="round"/>`},
+  sea:{name:"海鮮",svg:`<path d="M16.5 12 L22 7.5 L21 12 L22 16.5Z" fill="#8DC8F0" stroke="${O}" stroke-width="1.4" stroke-linejoin="round"/><path d="M2.5 12 Q6 5.5 12 5.5 Q17 5.5 18 12 Q17 18.5 12 18.5 Q6 18.5 2.5 12Z" fill="#BFDDF7" stroke="${O}" stroke-width="1.5"/><path d="M10.5 8 Q12 12 10.5 16" stroke="#8DC8F0" stroke-width="1.4" fill="none"/><circle cx="6.8" cy="11" r="1" fill="${O}"/><path d="M5 13.8 Q6 14.6 7 13.8" stroke="${O}" stroke-width="1.2" fill="none" stroke-linecap="round"/>`},
+};
+UI.nono = `<circle cx="12" cy="12" r="8.5" fill="#FFE1DC" stroke="#F26B5B" stroke-width="2.4"/><path d="M6 6 L18 18" stroke="#F26B5B" stroke-width="2.4" stroke-linecap="round"/>`;
+function meatIcon(k,on){return `<svg class="ic" width="26" height="26" viewBox="0 0 24 24">${MEAT[k].svg}${on?`<path d="M3.5 3.5 L20.5 20.5" stroke="#F26B5B" stroke-width="3" stroke-linecap="round"/><path d="M3.5 3.5 L20.5 20.5" stroke="#fff" stroke-width="1" stroke-linecap="round" opacity=".5"/>`:""}</svg>`;}
+/* 每間店「主打」的肉：先看招牌菜，再用店名補（拌麵、合菜這種什麼都有的店不算） */
+const DISH_MEAT = {beefnoodle:["beef"],steak:["beef"],yakiniku:["beef"],pho:["beef"],
+  braisedrice:["pork"],porkchop:["pork"],tonkatsu:["pork"],sausage:["pork"],stinkytofu:[],
+  chickenrice:["chicken"],drumstick:["chicken"],friedchicken:["chicken"],hainan:["chicken"],
+  lamb:["lamb"],sushi:["sea"],fish:["sea"]};
+const NAME_MEAT = [[/牛/,"beef"],[/吉野家/,"beef"],[/豬/,"pork"],[/雞/,"chicken"],[/羊/,"lamb"],[/海鮮|鱔魚|魚市|鱸魚|壽司/,"sea"]];
+function meatOf(r){
+  if(r._m) return r._m;
+  const m=new Set(DISH_MEAT[r.dish]||[]);
+  NAME_MEAT.forEach(([re,k])=>{ if(re.test(r.name)) m.add(k); });
+  // 個別修正：店名或招牌菜看不出來的
+  const FIX = {"豬一十五":[[],["pork"]], "小舍河粉":[["pork"],["beef"]], "弗薇越式":[[],["beef"]],
+    "高鐵特區 餐酒館":[[],["beef"]], "雙月食品社 竹北店":[["chicken"],[]], "肯德基":[["chicken"],[]]};
+  const f=FIX[r.name]; if(f){ f[0].forEach(k=>m.add(k)); f[1].forEach(k=>m.delete(k)); }
+  return r._m=m;
+}
 function paintIcons(root=document){root.querySelectorAll("[data-ic]").forEach(el=>{el.outerHTML=ui(el.dataset.ic,+el.dataset.s||18,el.dataset.w);});}
 
 
@@ -816,7 +848,7 @@ if(store.get("lunch_v",0)<5){ // v1.1：預設只搜竹北（新竹要到「條�
 }
 let history = store.get("lunch_hist",[]);
 let mode = "random";
-const F = Object.assign({region:"zb",time:25,prices:[],cuisines:[],avoid:true}, store.get("lunch_filter",{}));
+const F = Object.assign({region:"zb",time:25,prices:[],no:[],cuisines:[],avoid:true}, store.get("lunch_filter",{}));
 
 function allRestaurants(){
   return BASE.map(r=>({id:"b:"+r[0],name:r[0],area:r[1],cui:r[2],price:r[3],note:r[4],q:r[5],dish:r[6]})).concat(custom);
@@ -824,7 +856,7 @@ function allRestaurants(){
 /* 隨機模式：套用「區域」＋「價位快速選單」；條件模式：全部條件
    區域預設竹北，新竹要到「條件」選新竹或全部才會加入 */
 function candidates(){
-  let list = allRestaurants().filter(r=>(!F.prices.length || F.prices.includes(r.price)) && (F.region==="all" || AREAS[r.area].region===F.region));
+  let list = allRestaurants().filter(r=>(!F.prices.length || F.prices.includes(r.price)) && (F.region==="all" || AREAS[r.area].region===F.region) && !F.no.some(k=>meatOf(r).has(k)));
   if(mode==="filter"){
     list = list.filter(r=>{
       const a=AREAS[r.area];
@@ -848,6 +880,7 @@ function renderFilters(){
     + chip("region","all","全部",F.region==="all","sky");
   $("#fTime").innerHTML = [5,10,15,25].map(m=>chip("time",m,m===25?"都可以":m+" 分內",F.time===m,"mint",ui(m<=5?"walk":"car",18))).join("");
   $("#fPrice").innerHTML = Object.entries(PRICES).map(([k,v])=>chip("price",k,v.q,F.prices.includes(k),"peach")).join("");
+  $("#fNo").innerHTML = Object.entries(MEAT).map(([k,v])=>{const on=F.no.includes(k);return chip("no",k,(on?"不吃":"")+v.name,on,"no",meatIcon(k,on));}).join("");
   $("#fCuisine").innerHTML = Object.entries(CUISINES).map(([k,v])=>chip("cui",k,v.name,F.cuisines.includes(k),"",foodSVG(k,22))).join("");
   $("#avoidSw").classList.toggle("on",F.avoid);
 }
@@ -855,9 +888,10 @@ document.addEventListener("click",e=>{
   const c=e.target.closest(".chip"); if(!c) return;
   const g=c.dataset.g,k=c.dataset.k;
   const wasOn=c.classList.contains("on");
-  Snd.play((g==="price"||g==="cui")&&wasOn?"chipOff":"chipOn");
+  Snd.play((g==="price"||g==="cui"||g==="no")&&wasOn?"chipOff":"chipOn");
   if(g==="region") F.region=k;
   if(g==="time") F.time=+k;
+  if(g==="no") F.no=F.no.includes(k)?F.no.filter(x=>x!==k):[...F.no,k];
   if(g==="price") F.prices=F.prices.includes(k)?F.prices.filter(x=>x!==k):[...F.prices,k];
   if(g==="cui") F.cuisines=F.cuisines.includes(k)?F.cuisines.filter(x=>x!==k):[...F.cuisines,k];
   store.set("lunch_filter",F); renderFilters(); refresh();
@@ -1206,8 +1240,9 @@ $("#sfxBtn").onclick=()=>{const v=!Snd.sfxOn; if(!v) Snd.play("toggle",false); S
 
 
 /* ===== 版本 & 改版紀錄 ===== */
-const APP_VERSION = "1.1.0";
+const APP_VERSION = "1.2.0";
 const CHANGELOG = [
+  ["1.2.0","11/06","我不吃",["首頁新增「我不吃」：不吃牛／豬／雞／羊／海鮮","選了之後，主打這種肉的店會自動跳過","選擇會記住，下次打開還在"]],
   ["1.1.0","11/04","竹北餐廳大擴充！",["新增 61 間竹北餐廳，總共 151 間","每間店都有自己的專屬可愛圖示","新增「咖哩」分類","預設只抽竹北，想吃新竹到「條件」打開"]],
   ["1.0.0","11/03","正式上線！",["台元午餐轉轉 v1.0.0 正式上線，謝謝大家一起試用","最下方加上版權標示","飯糰君對話泡泡的小三角形稍微分開"]],
   ["0.9.1","11/03","飯糰君冷知識",["講完八卦後多戳幾下，飯糰君會問你冷知識","八卦講過了，再生氣也不會重講"]],
